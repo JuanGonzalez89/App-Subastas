@@ -33,4 +33,7 @@ public class Persona {
 
     @Column(name = "estado", length = 15)
     private String estado;
+
+    @Column(name = "rol", length = 10)
+    private String rol;
 }

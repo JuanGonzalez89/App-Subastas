@@ -14,6 +14,10 @@ frontend/.env
 # General
 .DS_Store
 *.log
+*.err
 *.iml
 .idea/
 .vscode/
+
+# Maven wrapper
+backend/.mvn/wrapper/maven-wrapper.jar

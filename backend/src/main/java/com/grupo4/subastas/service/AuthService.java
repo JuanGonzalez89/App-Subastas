@@ -78,6 +78,7 @@ public class AuthService {
                 .documento(pre.getNumeroDocumento())
                 .direccion(pre.getDomicilio())
                 .estado("activo")
+                .rol("USER")
                 .build();
         persona = personaRepository.save(persona);
 
@@ -138,7 +139,8 @@ public class AuthService {
         }
 
         Persona persona = cliente.getPersona();
-        String token = jwtUtil.generateToken(persona.getEmail(), persona.getIdentificador());
+        String rol = persona.getRol() != null ? persona.getRol() : "USER";
+        String token = jwtUtil.generateToken(persona.getEmail(), persona.getIdentificador(), rol);
 
         UsuarioResponse usuarioResponse = UsuarioResponse.builder()
                 .id(persona.getIdentificador())
@@ -147,6 +149,7 @@ public class AuthService {
                 .email(persona.getEmail())
                 .categoria(cliente.getCategoria())
                 .admitido(cliente.getAdmitido())
+                .rol(rol)
                 .build();
 
         return AuthResponse.builder()

@@ -12,4 +12,5 @@ public class UsuarioResponse {
     private String email;
     private String categoria;
     private String admitido;
+    private String rol;
 }

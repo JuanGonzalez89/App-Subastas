@@ -52,6 +52,7 @@ export const PaymentMethodsScreen = () => {
   const cargar = () =>
     listarMediosPagoApi()
       .then(setMedios)
+      .catch(() => setMedios([]))
       .finally(() => setLoading(false));
 
   useEffect(() => { cargar(); }, []);
@@ -312,6 +313,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '90%',
+    minHeight: 300,
   },
   modalHeader: {
     flexDirection: 'row',

@@ -27,6 +27,8 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(new CorsConfig().corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Admin endpoints → solo ADMIN
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/auth/**").permitAll()
                 // Pujas y conexión a subasta → siempre requieren autenticación
                 .requestMatchers("/subastas/*/conectar").authenticated()
