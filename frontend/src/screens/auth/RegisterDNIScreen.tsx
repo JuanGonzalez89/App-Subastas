@@ -24,9 +24,11 @@ type Props = {
 
 export const RegisterDNIScreen = ({ route, navigation }: Props) => {
   const params = route.params;
-  const [frente, setFrente] = useState<string | null>(null);
-  const [dorso, setDorso]   = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [frente, setFrente]       = useState<string | null>(null);
+  const [frenteB64, setFrenteB64] = useState<string | undefined>(undefined);
+  const [dorso, setDorso]         = useState<string | null>(null);
+  const [dorsoB64, setDorsoB64]   = useState<string | undefined>(undefined);
+  const [loading, setLoading]     = useState(false);
 
   const pickImage = async (side: 'frente' | 'dorso') => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -40,22 +42,29 @@ export const RegisterDNIScreen = ({ route, navigation }: Props) => {
       base64: true,
     });
     if (!result.canceled && result.assets[0]) {
+      const uri = result.assets[0].uri;
       const b64 = result.assets[0].base64 ?? undefined;
-      if (side === 'frente') setFrente(result.assets[0].uri);
-      else setDorso(result.assets[0].uri);
+      if (side === 'frente') { setFrente(uri); setFrenteB64(b64); }
+      else                   { setDorso(uri);  setDorsoB64(b64);  }
     }
   };
 
   const handleContinuar = async () => {
+    if (!frente || !dorso) {
+      Alert.alert('Fotos requeridas', 'Por favor subí ambas fotos del DNI (frente y dorso).');
+      return;
+    }
     setLoading(true);
     try {
       await registroPaso1Api({
-        nombre:          params.nombre,
-        apellido:        params.apellido,
-        email:           params.email,
-        numeroDocumento: params.numeroDocumento,
-        domicilio:       params.domicilio,
-        numeroPais:      params.numeroPais,
+        nombre:           params.nombre,
+        apellido:         params.apellido,
+        email:            params.email,
+        numeroDocumento:  params.numeroDocumento,
+        domicilio:        params.domicilio,
+        numeroPais:       params.numeroPais,
+        documentoFrente:  frenteB64,
+        documentoDorso:   dorsoB64,
       });
       Alert.alert(
         'Solicitud enviada',
