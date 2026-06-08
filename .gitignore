@@ -1,9 +1,6 @@
 # Backend
 backend/target/
 backend/*.class
-backend/.mvn/
-backend/mvnw
-backend/mvnw.cmd
 # CREDENCIALES — NUNCA subir al repo
 backend/src/main/resources/application.properties
 backend/src/main/resources/application-local.properties
