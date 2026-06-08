@@ -1,14 +1,21 @@
 # ============================================================
-# SUPABASE - PostgreSQL
-# Copiar este archivo como application.properties y completar
+# CONFIGURACIÓN — Sistema de Subastas
+# Copiar este archivo como "application.properties" y completar
 # ============================================================
-spring.datasource.url=jdbc:postgresql://TU_HOST.supabase.co:5432/postgres?sslmode=require
+
+# ============================================================
+# PostgreSQL LOCAL
+# 1. Instalar PostgreSQL (winget install PostgreSQL.PostgreSQL.17 --source winget)
+# 2. Crear base de datos: CREATE DATABASE subastas;
+# 3. Ejecutar: database/init_completo.sql
+# ============================================================
+spring.datasource.url=jdbc:postgresql://localhost:5432/subastas
 spring.datasource.username=postgres
-spring.datasource.password=TU_PASSWORD_SUPABASE
+spring.datasource.password=TU_PASSWORD_POSTGRES
 
 spring.datasource.driver-class-name=org.postgresql.Driver
 spring.datasource.hikari.minimum-idle=2
-spring.datasource.hikari.maximum-pool-size=5
+spring.datasource.hikari.maximum-pool-size=10
 spring.datasource.hikari.connection-timeout=30000
 
 # ============================================================
@@ -22,12 +29,13 @@ spring.jpa.properties.hibernate.format_sql=true
 # ============================================================
 # JWT
 # ============================================================
-jwt.secret=CAMBIAR_POR_SECRETO_LARGO_Y_ALEATORIO
+jwt.secret=CAMBIAR_POR_SECRETO_LARGO_Y_ALEATORIO_MINIMO_32_CARACTERES
 jwt.expiration=86400000
 
 # ============================================================
-# EMAIL - Gmail SMTP
-# Crear una "App Password" en Google Account → Security → App Passwords
+# EMAIL - Gmail SMTP (opcional para desarrollo)
+# Si no se configura, el token de confirmacion aparece en el log del servidor
+# Para configurar: Google Account → Security → App Passwords
 # ============================================================
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
