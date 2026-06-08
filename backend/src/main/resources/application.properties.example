@@ -1,0 +1,40 @@
+# ============================================================
+# SUPABASE - PostgreSQL
+# Copiar este archivo como application.properties y completar
+# ============================================================
+spring.datasource.url=jdbc:postgresql://TU_HOST.supabase.co:5432/postgres?sslmode=require
+spring.datasource.username=postgres
+spring.datasource.password=TU_PASSWORD_SUPABASE
+
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.datasource.hikari.minimum-idle=2
+spring.datasource.hikari.maximum-pool-size=5
+spring.datasource.hikari.connection-timeout=30000
+
+# ============================================================
+# JPA / Hibernate
+# ============================================================
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# ============================================================
+# JWT
+# ============================================================
+jwt.secret=CAMBIAR_POR_SECRETO_LARGO_Y_ALEATORIO
+jwt.expiration=86400000
+
+# ============================================================
+# EMAIL - Gmail SMTP
+# Crear una "App Password" en Google Account → Security → App Passwords
+# ============================================================
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=TU_EMAIL@gmail.com
+spring.mail.password=TU_APP_PASSWORD_GMAIL
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+app.url=http://localhost:8080
+server.port=8080

@@ -1,0 +1,22 @@
+# Backend
+backend/target/
+backend/*.class
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+# CREDENCIALES — NUNCA subir al repo
+backend/src/main/resources/application.properties
+backend/src/main/resources/application-local.properties
+
+# Frontend
+frontend/node_modules/
+frontend/.expo/
+frontend/dist/
+frontend/.env
+
+# General
+.DS_Store
+*.log
+*.iml
+.idea/
+.vscode/

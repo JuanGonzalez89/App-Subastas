@@ -1,0 +1,31 @@
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:8080';
+
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 15000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+axiosInstance.interceptors.request.use(async (config) => {
+  const token = await AsyncStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (!error.response) {
+      return Promise.reject(new Error('Sin conexión al servidor. Verificá tu conexión a internet.'));
+    }
+    const mensaje = error.response.data?.error ?? 'Ocurrió un error inesperado.';
+    return Promise.reject(new Error(mensaje));
+  }
+);
+
+export default axiosInstance;
