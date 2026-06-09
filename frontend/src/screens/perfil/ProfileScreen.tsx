@@ -10,8 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { obtenerPerfilApi } from '../../api/clienteApi';
-import { PerfilResponse } from '../../types';
+import { obtenerPerfilApi, obtenerHistorialApi } from '../../api/clienteApi';
+import { HistorialResponse, PerfilResponse } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
 import { PerfilStackParamList } from '../../navigation/PerfilStack';
@@ -30,14 +30,21 @@ const CATEGORIA_LABELS: Record<string, string> = {
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 export const ProfileScreen = ({ navigation }: Props) => {
-  const { logout } = useAuth();
+  const { logout, isAdmin } = useAuth();
   const [perfil, setPerfil] = useState<PerfilResponse | null>(null);
+  const [historial, setHistorial] = useState<HistorialResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
 
   useEffect(() => {
-    obtenerPerfilApi()
-      .then(setPerfil)
+    Promise.all([
+      obtenerPerfilApi(),
+      obtenerHistorialApi(),
+    ])
+      .then(([p, h]) => {
+        setPerfil(p);
+        setHistorial(h);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -56,8 +63,21 @@ export const ProfileScreen = ({ navigation }: Props) => {
 
   const catColor = colors.categoria[perfil.categoria as keyof typeof colors.categoria] ?? colors.primary;
 
-  // Datos ficticios de actividad para el gráfico de barras (6 meses)
-  const barData = [0.4, 0.7, 0.3, 0.9, 0.6, 1.0];
+  const formatearMonto = (monto: number): string => {
+    if (monto >= 1_000_000) return `$${(monto / 1_000_000).toFixed(1)}M`;
+    if (monto >= 1_000) return `$${(monto / 1_000).toFixed(1)}K`;
+    return `$${new Intl.NumberFormat('es-AR').format(monto)}`;
+  };
+
+  const barData = historial?.pujas && historial.pujas.length > 0
+    ? (() => {
+        const total = historial.pujas.length;
+        const counts = new Array(6).fill(0);
+        historial.pujas.forEach((_, i) => counts[Math.floor(i / Math.max(total / 6, 1)) % 6]++);
+        const max = Math.max(...counts, 1);
+        return counts.map((c) => c / max);
+      })()
+    : [0, 0, 0, 0, 0, 0];
   const mesActual = new Date().getMonth();
   const ultimos6Meses = Array.from({ length: 6 }, (_, i) => MESES[(mesActual - 5 + i + 12) % 12]);
 
@@ -84,9 +104,9 @@ export const ProfileScreen = ({ navigation }: Props) => {
 
         {/* ── 3 tarjetas de estadísticas ── */}
         <View style={styles.statsRow}>
-          <StatCard label="Subastas" value="12" icon="hammer-outline" />
-          <StatCard label="Ganadas"  value="3"  icon="trophy-outline" />
-          <StatCard label="Ofertado" value="$8.4K" icon="trending-up-outline" />
+          <StatCard label="Subastas" value={String(historial?.subastasAsistidas ?? 0)} icon="hammer-outline" />
+          <StatCard label="Ganadas"  value={String(historial?.subastasGanadas ?? 0)}  icon="trophy-outline" />
+          <StatCard label="Ofertado" value={formatearMonto(historial?.importeTotalOfertado ?? 0)} icon="trending-up-outline" />
         </View>
 
         {/* ── Actividad de Pujas (gráfico de barras) ── */}
@@ -159,6 +179,17 @@ export const ProfileScreen = ({ navigation }: Props) => {
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textDisabled} />
         </TouchableOpacity>
+
+        {isAdmin && (
+          <View style={[styles.menuItem, { opacity: 0.8 }]}>
+            <View style={styles.menuLeft}>
+              <View style={[styles.menuIcon, { backgroundColor: '#7C3AED' }]}>
+                <Ionicons name="shield-checkmark-outline" size={20} color="#FFFFFF" />
+              </View>
+              <Text style={styles.menuLabel}>Panel de Administración (en pestaña Admin)</Text>
+            </View>
+          </View>
+        )}
 
         {/* ── Cerrar sesión ── */}
         <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.85}>

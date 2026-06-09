@@ -1,16 +1,20 @@
 package com.grupo4.subastas.controller;
 
 import com.grupo4.subastas.dto.request.MedioPagoRequest;
-import com.grupo4.subastas.dto.request.SolicitudItemRequest;
 import com.grupo4.subastas.dto.response.*;
 import com.grupo4.subastas.service.ClienteService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -59,12 +63,15 @@ public class ClienteController {
 
     // ── Solicitar ítem ───────────────────────────────────────────────────────
 
-    @PostMapping("/me/solicitudes-items")
+    @PostMapping(value = "/me/solicitudes-items", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SolicitudItemResponse> solicitarItem(
             Authentication auth,
-            @Valid @RequestBody SolicitudItemRequest request) {
+            @RequestParam("descripcion") @NotBlank String descripcion,
+            @RequestParam(value = "descripcionCompleta", required = false) String descripcionCompleta,
+            @RequestParam(value = "precioSugerido", required = false) @Positive BigDecimal precioSugerido,
+            @RequestParam("fotos") MultipartFile[] fotos) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(clienteService.solicitarItem(auth.getName(), request));
+                .body(clienteService.solicitarItem(auth.getName(), descripcion, descripcionCompleta, precioSugerido, fotos));
     }
 
     @GetMapping("/me/solicitudes-items")

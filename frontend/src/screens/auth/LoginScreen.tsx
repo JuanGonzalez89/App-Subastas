@@ -132,7 +132,7 @@ export const LoginScreen = ({ navigation }: Props) => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => navigation.navigate('RegisterStep3', {})}
+                onPress={() => navigation.navigate('RegisterStep3', { email: email.trim().toLowerCase() || undefined })}
                 style={styles.tokenLink}
               >
                 <Text style={styles.tokenLinkText}>Ya tengo token de confirmación</Text>

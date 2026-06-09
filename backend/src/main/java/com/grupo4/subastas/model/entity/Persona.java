@@ -36,4 +36,7 @@ public class Persona {
 
     @Column(name = "rol", length = 10)
     private String rol;
+
+    @Column(name = "foto")
+    private byte[] foto;
 }

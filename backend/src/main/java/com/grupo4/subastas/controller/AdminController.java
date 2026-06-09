@@ -3,6 +3,9 @@ package com.grupo4.subastas.controller;
 import com.grupo4.subastas.dto.request.CrearProductoRequest;
 import com.grupo4.subastas.dto.request.CrearSubastaRequest;
 import com.grupo4.subastas.dto.request.VincularItemCatalogoRequest;
+import com.grupo4.subastas.dto.response.MedioPagoResponse;
+import com.grupo4.subastas.dto.response.PreRegistracionResponse;
+import com.grupo4.subastas.dto.response.SolicitudItemResponse;
 import com.grupo4.subastas.model.entity.Catalogo;
 import com.grupo4.subastas.model.entity.ItemCatalogo;
 import com.grupo4.subastas.model.entity.Producto;
@@ -14,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -23,10 +27,31 @@ public class AdminController {
 
     private final AdminService adminService;
 
+    @GetMapping("/solicitudes-usuarios")
+    public ResponseEntity<List<PreRegistracionResponse>> listarSolicitudesUsuarios() {
+        return ResponseEntity.ok(adminService.listarSolicitudesUsuarios());
+    }
+
+    @GetMapping("/solicitudes-items")
+    public ResponseEntity<List<SolicitudItemResponse>> listarSolicitudesItems() {
+        return ResponseEntity.ok(adminService.listarSolicitudes());
+    }
+
     @PostMapping("/solicitudes-items/{id}/aprobar")
     public ResponseEntity<Map<String, String>> aprobarSolicitudItem(@PathVariable Integer id) {
         adminService.aprobarSolicitudItem(id);
         return ResponseEntity.ok(Map.of("mensaje", "Solicitud aprobada"));
+    }
+
+    @GetMapping("/medios-pago")
+    public ResponseEntity<List<MedioPagoResponse>> listarMediosPago() {
+        return ResponseEntity.ok(adminService.listarMediosPagoPendientes());
+    }
+
+    @PostMapping("/medios-pago/{id}/aprobar")
+    public ResponseEntity<Map<String, String>> aprobarMedioPago(@PathVariable Integer id) {
+        adminService.aprobarMedioPago(id);
+        return ResponseEntity.ok(Map.of("mensaje", "Medio de pago aprobado"));
     }
 
     @PostMapping("/subastas")

@@ -36,6 +36,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleGenericException(Exception e) {
         log.error("Error interno", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error interno del servidor"));
+                .body(Map.of("error", "Error interno: " + e.getClass().getSimpleName() + " - " + e.getMessage()));
     }
 }

@@ -18,8 +18,8 @@
       },
       "package": "com.grupo4.subastas"
     },
-    "extra": {
-      "apiUrl": "http://10.0.2.2:8080"
-    }
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

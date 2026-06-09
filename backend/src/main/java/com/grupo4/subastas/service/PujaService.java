@@ -5,6 +5,7 @@ import com.grupo4.subastas.dto.response.ConectarResponse;
 import com.grupo4.subastas.dto.response.PujaResponse;
 import com.grupo4.subastas.exception.CustomException;
 import com.grupo4.subastas.model.entity.Asistente;
+import com.grupo4.subastas.model.entity.Catalogo;
 import com.grupo4.subastas.model.entity.ItemCatalogo;
 import com.grupo4.subastas.model.entity.Pujo;
 import com.grupo4.subastas.model.entity.Subasta;
@@ -29,6 +30,7 @@ public class PujaService {
     private final ItemCatalogoRepository itemCatalogoRepository;
     private final PujoRepository         pujoRepository;
     private final MedioPagoRepository    medioPagoRepository;
+    private final CatalogoRepository     catalogoRepository;
 
     // Categorías que están exentas de los límites de puja
     private static final Set<String> CATEGORIAS_SIN_LIMITE = Set.of("oro", "platino");
@@ -117,11 +119,21 @@ public class PujaService {
             throw new CustomException("Este ítem ya fue subastado", HttpStatus.BAD_REQUEST);
         }
 
+        // Validar que el ítem pertenece al catálogo de esta subasta
+        Catalogo catalogo = catalogoRepository.findBySubastaId(subastaId)
+                .orElseThrow(() -> new CustomException("La subasta no tiene un catálogo", HttpStatus.NOT_FOUND));
+        if (!item.getCatalogo().getIdentificador().equals(catalogo.getIdentificador())) {
+            throw new CustomException("El ítem no pertenece a esta subasta", HttpStatus.BAD_REQUEST);
+        }
+
         // Obtener la categoría de la subasta para aplicar (o no) los límites
         Subasta subasta = subastaRepository.findById(subastaId)
                 .orElseThrow(() -> new CustomException("Subasta no encontrada", HttpStatus.NOT_FOUND));
 
         BigDecimal precioBase   = item.getPrecioBase();
+        if (precioBase == null) {
+            throw new CustomException("El ítem no tiene precio base configurado", HttpStatus.BAD_REQUEST);
+        }
         BigDecimal ofertaActual = pujoRepository.findMaxImporteByItemId(request.getItemId())
                 .orElse(precioBase);
 

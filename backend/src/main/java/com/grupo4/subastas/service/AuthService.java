@@ -63,7 +63,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void aprobarRegistro(Integer preRegistracionId, String categoria) {
+    public void aprobarRegistro(Integer preRegistracionId, String categoria, String rol) {
         PreRegistracion pre = preRegistracionRepository.findById(preRegistracionId)
                 .orElseThrow(() -> new CustomException("Pre-registro no encontrado", HttpStatus.NOT_FOUND));
 
@@ -78,7 +78,7 @@ public class AuthService {
                 .documento(pre.getNumeroDocumento())
                 .direccion(pre.getDomicilio())
                 .estado("activo")
-                .rol("USER")
+                .rol(rol != null ? rol : "USER")
                 .build();
         persona = personaRepository.save(persona);
 
@@ -136,6 +136,9 @@ public class AuthService {
         }
         if (!passwordEncoder.matches(request.getClavePersonal(), cliente.getClavePersonal())) {
             throw new CustomException("Email o clave incorrectos", HttpStatus.UNAUTHORIZED);
+        }
+        if (!"si".equals(cliente.getAdmitido())) {
+            throw new CustomException("Tu registro aún no ha sido aprobado por un administrador", HttpStatus.FORBIDDEN);
         }
 
         Persona persona = cliente.getPersona();

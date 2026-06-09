@@ -2,6 +2,7 @@ package com.grupo4.subastas.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
@@ -24,6 +25,7 @@ public class CrearSubastaRequest {
     private int capacidadAsistentes;
 
     @NotBlank
+    @Pattern(regexp = "comun|especial|plata|oro|platino")
     private String categoria;
 
     private String moneda;

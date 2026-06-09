@@ -10,4 +10,6 @@ import java.util.List;
 public interface SolicitudItemRepository extends JpaRepository<SolicitudItem, Integer> {
 
     List<SolicitudItem> findByClienteIdOrderByFechaSolicitudDesc(Integer clienteId);
+
+    List<SolicitudItem> findAllByOrderByFechaSolicitudDesc();
 }

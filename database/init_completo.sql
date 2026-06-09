@@ -32,8 +32,9 @@ CREATE TABLE IF NOT EXISTS personas (
     apellido      VARCHAR(150),
     email         VARCHAR(250) UNIQUE,
     direccion     VARCHAR(250),
-    estado        VARCHAR(15)  CHECK (estado IN ('activo', 'incativo')),
+    estado        VARCHAR(15)  CHECK (estado IN ('activo', 'inactivo')),
     foto          BYTEA,
+    rol           VARCHAR(10)  DEFAULT 'USER',
     CONSTRAINT pk_personas PRIMARY KEY (identificador)
 );
 
@@ -172,6 +173,7 @@ CREATE TABLE IF NOT EXISTS pujos (
     item          INT           NOT NULL,
     importe       DECIMAL(18,2) NOT NULL CHECK (importe > 0.01),
     ganador       VARCHAR(2)    DEFAULT 'no' CHECK (ganador IN ('si','no')),
+    fechahora     TIMESTAMP     DEFAULT NOW(),
     CONSTRAINT pk_pujos PRIMARY KEY (identificador),
     CONSTRAINT fk_pujos_asistentes    FOREIGN KEY (asistente) REFERENCES asistentes(identificador),
     CONSTRAINT fk_pujos_itemscatalogo FOREIGN KEY (item)      REFERENCES itemscatalogo(identificador)
@@ -238,7 +240,7 @@ CREATE TABLE IF NOT EXISTS mediospago (
 
 CREATE TABLE IF NOT EXISTS solicitudes_items (
     identificador        SERIAL        PRIMARY KEY,
-    cliente              INTEGER       NOT NULL,
+    cliente              INTEGER       NOT NULL REFERENCES clientes(identificador),
     descripcion          VARCHAR(500)  NOT NULL,
     descripcion_completa VARCHAR(500),
     precio_sugerido      DECIMAL(18,2),
@@ -246,6 +248,12 @@ CREATE TABLE IF NOT EXISTS solicitudes_items (
     fecha_solicitud      DATE          DEFAULT CURRENT_DATE
 );
 
+CREATE TABLE IF NOT EXISTS solicitudes_fotos (
+    identificador    SERIAL  PRIMARY KEY,
+    solicitud_item   INTEGER NOT NULL REFERENCES solicitudes_items(identificador),
+    foto             BYTEA,
+    orden            INTEGER
+);
 
 -- ============================================================
 -- PARTE 3: DATOS SEMILLA (seed)
@@ -265,10 +273,20 @@ INSERT INTO paises (numero, nombre, nombrecorto, capital, nacionalidad, idiomas)
 ON CONFLICT (numero) DO NOTHING;
 
 -- Empleado SISTEMA (requerido como FK en clientes.verificador)
-INSERT INTO personas (documento, nombre, apellido, email, estado)
-VALUES ('SISTEMA', 'Sistema', 'Automatico', 'sistema@subastas.com', 'activo')
+INSERT INTO personas (documento, nombre, apellido, email, estado, rol)
+VALUES ('SISTEMA', 'Sistema', 'Automatico', 'sistema@subastas.com', 'activo', 'ADMIN')
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO empleados (identificador, cargo)
 SELECT identificador, 'SISTEMA' FROM personas WHERE email = 'sistema@subastas.com'
+ON CONFLICT (identificador) DO NOTHING;
+
+-- Admin por defecto (login con email: admin@subastas.com, clave: admin123)
+INSERT INTO personas (documento, nombre, apellido, email, estado, rol)
+VALUES ('ADMIN-001', 'Admin', 'Principal', 'admin@subastas.com', 'activo', 'ADMIN')
+ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO clientes (identificador, admitido, categoria, verificador, clavepersonal)
+SELECT identificador, 'si', 'platino', 1, '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+FROM personas WHERE email = 'admin@subastas.com'
 ON CONFLICT (identificador) DO NOTHING;

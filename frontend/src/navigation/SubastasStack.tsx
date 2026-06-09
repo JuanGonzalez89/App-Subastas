@@ -9,7 +9,7 @@ import { colors } from '../theme/colors';
 export type SubastasStackParamList = {
   AuctionList: undefined;
   AuctionDetail: { subastaId: number };
-  ItemDetail: { itemId: number; subastaId: number };
+  ItemDetail: { itemId: number; subastaId: number; moneda?: string };
   LiveAuction: {
     subastaId: number;
     itemId: number;

@@ -3,7 +3,9 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -170,6 +172,10 @@ export const PaymentMethodsScreen = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={{ flex: 1, justifyContent: 'flex-end' }}
+          >
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Nuevo medio de pago</Text>
@@ -251,6 +257,7 @@ export const PaymentMethodsScreen = () => {
               </TouchableOpacity>
             </ScrollView>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -312,6 +319,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    flex: 1,
     maxHeight: '90%',
     minHeight: 300,
   },
@@ -324,7 +332,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   modalTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
-  modalBody: { padding: 20, gap: 6, paddingBottom: 40 },
+  modalBody: { padding: 20, gap: 6, paddingBottom: 80 },
   fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginTop: 12, marginBottom: 4 },
   tipoSelector: { gap: 8 },
   tipoChip: {

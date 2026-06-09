@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { loginApi } from '../api/authApi';
 import { LoginRequest, UsuarioResponse } from '../types';
 
@@ -9,6 +9,8 @@ interface AuthContextType {
   loading: boolean;
   login: (data: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
+  isAdmin: boolean;
+  userRole: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -18,20 +20,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const isAdmin = user?.rol === 'ADMIN';
+  const userRole = user?.rol ?? null;
+
   useEffect(() => {
     cargarSesionGuardada();
   }, []);
 
   const cargarSesionGuardada = async () => {
     try {
-      const storedToken = await AsyncStorage.getItem('token');
-      const storedUser = await AsyncStorage.getItem('user');
+      const storedToken = await SecureStore.getItemAsync('token');
+      const storedUser = await SecureStore.getItemAsync('user');
       if (storedToken && storedUser) {
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch {
+          await SecureStore.deleteItemAsync('token');
+          await SecureStore.deleteItemAsync('user');
+        }
       }
     } catch (_) {
-      // Si hay error al leer storage, simplemente no hay sesión
     } finally {
       setLoading(false);
     }
@@ -39,21 +48,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (data: LoginRequest) => {
     const response = await loginApi(data);
-    await AsyncStorage.setItem('token', response.token);
-    await AsyncStorage.setItem('user', JSON.stringify(response.usuario));
+    await SecureStore.setItemAsync('token', response.token);
+    await SecureStore.setItemAsync('user', JSON.stringify(response.usuario));
     setToken(response.token);
     setUser(response.usuario);
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
+    await SecureStore.deleteItemAsync('token');
+    await SecureStore.deleteItemAsync('user');
     setToken(null);
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, isAdmin, userRole }}>
       {children}
     </AuthContext.Provider>
   );

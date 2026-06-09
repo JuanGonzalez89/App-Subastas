@@ -16,6 +16,7 @@ public class EmailService {
     public void enviarEmailConfirmacion(String destinatario, String nombre, String token) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("juanignaciogonzalez.ca@gmail.com");
             message.setTo(destinatario);
             message.setSubject("Confirmá tu registro - Sistema de Subastas");
             message.setText(

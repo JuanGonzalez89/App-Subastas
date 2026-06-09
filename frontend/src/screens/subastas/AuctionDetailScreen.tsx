@@ -108,7 +108,7 @@ export const AuctionDetailScreen = ({ navigation, route }: Props) => {
           <ItemCard
             item={item}
             moneda={subasta.moneda}
-            onPress={() => navigation.navigate('ItemDetail', { itemId: item.id, subastaId })}
+            onPress={() => navigation.navigate('ItemDetail', { itemId: item.id, subastaId, moneda: subasta?.moneda })}
           />
         )}
         ListHeaderComponent={Header}

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -109,71 +108,66 @@ export const AuctionListScreen = ({ navigation }: Props) => {
       </ScrollView>
 
       {/* ── Contenido ── */}
-      <FlatList
-        data={[]}
-        keyExtractor={() => 'x'}
-        renderItem={null}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListHeaderComponent={
-          <View style={{ paddingBottom: 24 }}>
-            {error ? (
-              <View style={styles.center}>
-                <Text style={styles.errorText}>{error}</Text>
-                <TouchableOpacity onPress={() => cargar(filtro)}>
-                  <Text style={styles.retry}>Reintentar</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <>
-                {/* Subastas en Vivo */}
-                {enVivo.length > 0 && (
-                  <View>
-                    <View style={styles.sectionHeader}>
-                      <Text style={styles.sectionTitle}>Subastas en Vivo</Text>
-                      <Text style={styles.sectionSub}>Participá ahora en las subastas activas</Text>
-                    </View>
-                    {enVivo.map((s) => (
-                      <AuctionCard
-                        key={s.id}
-                        subasta={s}
-                        badge="En curso"
-                        badgeColor="#27AE60"
-                        onPress={() => navigation.navigate('AuctionDetail', { subastaId: s.id })}
-                      />
-                    ))}
-                  </View>
-                )}
-
-                {/* Próximamente */}
-                {proximamente.length > 0 && (
-                  <View style={{ marginTop: enVivo.length > 0 ? 8 : 0 }}>
-                    <View style={styles.sectionHeader}>
-                      <Text style={styles.sectionTitle}>Próximamente</Text>
-                    </View>
-                    {proximamente.map((s) => (
-                      <AuctionCard
-                        key={s.id}
-                        subasta={s}
-                        badge="Próximamente"
-                        badgeColor={colors.secondary}
-                        onPress={() => navigation.navigate('AuctionDetail', { subastaId: s.id })}
-                      />
-                    ))}
-                  </View>
-                )}
-
-                {subastas.length === 0 && !error && (
-                  <View style={styles.empty}>
-                    <Ionicons name="hammer-outline" size={48} color={colors.textDisabled} />
-                    <Text style={styles.emptyText}>No hay subastas disponibles</Text>
-                  </View>
-                )}
-              </>
-            )}
+      >
+        {error ? (
+          <View style={styles.center}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity onPress={() => cargar(filtro)}>
+              <Text style={styles.retry}>Reintentar</Text>
+            </TouchableOpacity>
           </View>
-        }
-        contentContainerStyle={{ paddingHorizontal: 0 }}
-      />
+        ) : (
+          <>
+            {/* Subastas en Vivo */}
+            {enVivo.length > 0 && (
+              <View>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Subastas en Vivo</Text>
+                  <Text style={styles.sectionSub}>Participá ahora en las subastas activas</Text>
+                </View>
+                {enVivo.map((s) => (
+                  <AuctionCard
+                    key={s.id}
+                    subasta={s}
+                    badge="En curso"
+                    badgeColor="#27AE60"
+                    onPress={() => navigation.navigate('AuctionDetail', { subastaId: s.id })}
+                  />
+                ))}
+              </View>
+            )}
+
+            {/* Próximamente */}
+            {proximamente.length > 0 && (
+              <View style={{ marginTop: enVivo.length > 0 ? 8 : 0 }}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Próximamente</Text>
+                </View>
+                {proximamente.map((s) => (
+                  <AuctionCard
+                    key={s.id}
+                    subasta={s}
+                    badge="Próximamente"
+                    badgeColor={colors.secondary}
+                    onPress={() => navigation.navigate('AuctionDetail', { subastaId: s.id })}
+                  />
+                ))}
+              </View>
+            )}
+
+            {subastas.length === 0 && !error && (
+              <View style={styles.empty}>
+                <Ionicons name="hammer-outline" size={48} color={colors.textDisabled} />
+                <Text style={styles.emptyText}>No hay subastas disponibles</Text>
+              </View>
+            )}
+          </>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 };

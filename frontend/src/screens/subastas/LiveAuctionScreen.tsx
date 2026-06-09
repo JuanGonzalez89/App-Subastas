@@ -75,12 +75,12 @@ export const LiveAuctionScreen = ({ route, navigation }: Props) => {
     : precioBase;
 
   // ── Incrementos calculados sobre precioBase (1%, 5%, 10%, 20%) ───────────
-  const incrementos = [
-    Math.ceil(precioBase * 0.01),
-    Math.ceil(precioBase * 0.05),
-    Math.ceil(precioBase * 0.10),
-    Math.ceil(precioBase * 0.20),
-  ];
+  const incrementos = React.useMemo(() => [
+    Math.ceil(ofertaActual * 0.01),
+    Math.ceil(ofertaActual * 0.05),
+    Math.ceil(ofertaActual * 0.10),
+    Math.ceil(ofertaActual * 0.20),
+  ], [ofertaActual]);
 
   const fmt = (n: number) =>
     new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0 }).format(n);
@@ -105,6 +105,14 @@ export const LiveAuctionScreen = ({ route, navigation }: Props) => {
     };
   }, [fetchPujas]);
 
+  const pujaGanadoraPropia = pujas.some((p) => p.esPropio && p.ganador === 'si');
+  useEffect(() => {
+    if (pujaGanadoraPropia && pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, [pujaGanadoraPropia]);
+
   // ── Pujar ─────────────────────────────────────────────────────────────────
   const handlePujar = async (monto?: number) => {
     const montoFinal = monto ?? parseFloat(inputMonto.replace(',', '.'));
@@ -114,8 +122,8 @@ export const LiveAuctionScreen = ({ route, navigation }: Props) => {
       return;
     }
 
-    const minBid = ofertaActual + precioBase * 0.01;
-    const maxBid = ofertaActual + precioBase * 0.20;
+    const minBid = Math.ceil(ofertaActual * 1.01);
+    const maxBid = Math.ceil(ofertaActual * 1.20);
 
     if (montoFinal < minBid) {
       Alert.alert(

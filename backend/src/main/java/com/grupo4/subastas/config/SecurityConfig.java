@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -19,17 +20,20 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(new CorsConfig().corsConfigurationSource()))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Admin endpoints → solo ADMIN
                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/auth/admin/**").hasRole("ADMIN")
+                .requestMatchers("/auth/registro/**").permitAll()
+                .requestMatchers("/auth/login").permitAll()
                 // Pujas y conexión a subasta → siempre requieren autenticación
                 .requestMatchers("/subastas/*/conectar").authenticated()
                 .requestMatchers("/subastas/*/pujas").authenticated()

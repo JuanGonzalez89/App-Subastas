@@ -11,7 +11,7 @@ public class VincularItemCatalogoRequest {
     @NotNull
     private Integer productoId;
 
-    @Positive
+    @NotNull @Positive
     private BigDecimal precioBase;
 
     private BigDecimal comision;

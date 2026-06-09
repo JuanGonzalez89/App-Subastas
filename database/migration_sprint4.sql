@@ -21,7 +21,11 @@ CREATE TABLE IF NOT EXISTS pujos (
     item           INT             NOT NULL,
     importe        DECIMAL(18,2)   NOT NULL CHECK (importe > 0.01),
     ganador        VARCHAR(2)      DEFAULT 'no' CHECK (ganador IN ('si','no')),
+    fechahora      TIMESTAMP       DEFAULT NOW(),
     CONSTRAINT pk_pujos PRIMARY KEY (identificador),
     CONSTRAINT fk_pujos_asistentes   FOREIGN KEY (asistente) REFERENCES asistentes(identificador),
     CONSTRAINT fk_pujos_itemscatalogo FOREIGN KEY (item)      REFERENCES itemscatalogo(identificador)
 );
+
+-- En caso de que la tabla ya exista sin la columna (migración parcial)
+ALTER TABLE pujos ADD COLUMN IF NOT EXISTS fechahora TIMESTAMP DEFAULT NOW();

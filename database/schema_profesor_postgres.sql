@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS personas (
     apellido      VARCHAR(150),
     email         VARCHAR(250) UNIQUE,
     direccion     VARCHAR(250),
-    estado        VARCHAR(15)  CHECK (estado IN ('activo', 'incativo')),
+    estado        VARCHAR(15)  CHECK (estado IN ('activo', 'inactivo')),
     foto          BYTEA,
     CONSTRAINT pk_personas PRIMARY KEY (identificador)
 );

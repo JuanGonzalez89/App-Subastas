@@ -4,7 +4,6 @@ import {
   MedioPagoRequest,
   MedioPagoResponse,
   PerfilResponse,
-  SolicitudItemRequest,
   SolicitudItemResponse,
 } from '../types';
 
@@ -27,8 +26,31 @@ export const obtenerHistorialApi = (): Promise<HistorialResponse> =>
   api.get('/clientes/me/historial').then((r) => r.data);
 
 // ── Solicitar ítem ─────────────────────────────────────────────────────────
-export const solicitarItemApi = (data: SolicitudItemRequest): Promise<SolicitudItemResponse> =>
-  api.post('/clientes/me/solicitudes-items', data).then((r) => r.data);
+export const solicitarItemApi = async (descripcion: string, descripcionCompleta: string | undefined, precioSugerido: number | undefined, fotosUris: string[]): Promise<SolicitudItemResponse> => {
+  const formData = new FormData();
+
+  formData.append('descripcion', descripcion);
+  if (descripcionCompleta?.trim()) {
+    formData.append('descripcionCompleta', descripcionCompleta.trim());
+  }
+  if (precioSugerido != null && !isNaN(precioSugerido)) {
+    formData.append('precioSugerido', String(precioSugerido));
+  }
+
+  fotosUris.forEach((uri) => {
+    const filename = uri.split('/').pop() || 'foto.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const mime = match ? `image/${match[1]}` : 'image/jpeg';
+    formData.append('fotos', {
+      uri,
+      name: filename,
+      type: mime,
+    } as any);
+  });
+
+  const response = await api.post('/clientes/me/solicitudes-items', formData);
+  return response.data;
+};
 
 export const listarMisSolicitudesApi = (): Promise<SolicitudItemResponse[]> =>
   api.get('/clientes/me/solicitudes-items').then((r) => r.data);

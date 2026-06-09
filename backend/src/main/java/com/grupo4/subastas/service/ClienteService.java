@@ -1,7 +1,6 @@
 package com.grupo4.subastas.service;
 
 import com.grupo4.subastas.dto.request.MedioPagoRequest;
-import com.grupo4.subastas.dto.request.SolicitudItemRequest;
 import com.grupo4.subastas.dto.response.*;
 import com.grupo4.subastas.exception.CustomException;
 import com.grupo4.subastas.model.entity.*;
@@ -10,7 +9,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ public class ClienteService {
     private final AsistenteRepository    asistenteRepository;
     private final PujoRepository         pujoRepository;
     private final SolicitudItemRepository solicitudItemRepository;
+    private final SolicitudFotoRepository solicitudFotoRepository;
 
     // ── Perfil ───────────────────────────────────────────────────────────────
 
@@ -112,7 +114,11 @@ public class ClienteService {
 
         // 4. Métricas
         int subastasAsistidas = asistentes.size();
-        long subastasGanadas  = pujos.stream().filter(p -> "si".equals(p.getGanador())).count();
+        long subastasGanadas  = pujos.stream()
+                .filter(p -> "si".equals(p.getGanador()))
+                .map(p -> asistenteSubastaMap.get(p.getAsistenteId()))
+                .distinct()
+                .count();
         BigDecimal importeTotal = pujoRepository.sumImporteByAsistenteIds(asistenteIds);
 
         // 5. Lista de pujas con subastaId resuelto
@@ -137,17 +143,34 @@ public class ClienteService {
     // ── Solicitar ítem ───────────────────────────────────────────────────────
 
     @Transactional
-    public SolicitudItemResponse solicitarItem(String email, SolicitudItemRequest request) {
+    public SolicitudItemResponse solicitarItem(String email, String descripcion, String descripcionCompleta, BigDecimal precioSugerido, MultipartFile[] fotos) {
         Cliente cliente = findByEmail(email);
 
         SolicitudItem solicitud = SolicitudItem.builder()
                 .clienteId(cliente.getIdentificador())
-                .descripcion(request.getDescripcion())
-                .descripcionCompleta(request.getDescripcionCompleta())
-                .precioSugerido(request.getPrecioSugerido())
+                .descripcion(descripcion)
+                .descripcionCompleta(descripcionCompleta)
+                .precioSugerido(precioSugerido)
                 .build();
 
-        return toSolicitudResponse(solicitudItemRepository.save(solicitud));
+        solicitud = solicitudItemRepository.save(solicitud);
+
+        if (fotos != null) {
+            for (int i = 0; i < fotos.length; i++) {
+                try {
+                    SolicitudFoto foto = SolicitudFoto.builder()
+                            .solicitudItemId(solicitud.getIdentificador())
+                            .foto(fotos[i].getBytes())
+                            .orden(i)
+                            .build();
+                    solicitudFotoRepository.save(foto);
+                } catch (IOException e) {
+                    throw new CustomException("Error al procesar la foto " + i, HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }
+        }
+
+        return toSolicitudResponse(solicitud);
     }
 
     @Transactional
@@ -179,6 +202,7 @@ public class ClienteService {
     }
 
     private SolicitudItemResponse toSolicitudResponse(SolicitudItem s) {
+        List<Integer> fotoIds = solicitudFotoRepository.findIdsBySolicitudItemId(s.getIdentificador());
         return SolicitudItemResponse.builder()
                 .id(s.getIdentificador())
                 .descripcion(s.getDescripcion())
@@ -186,6 +210,7 @@ public class ClienteService {
                 .precioSugerido(s.getPrecioSugerido())
                 .estado(s.getEstado())
                 .fechaSolicitud(s.getFechaSolicitud())
+                .fotoIds(fotoIds)
                 .build();
     }
 }

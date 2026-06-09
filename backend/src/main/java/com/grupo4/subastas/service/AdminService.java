@@ -3,6 +3,9 @@ package com.grupo4.subastas.service;
 import com.grupo4.subastas.dto.request.CrearProductoRequest;
 import com.grupo4.subastas.dto.request.CrearSubastaRequest;
 import com.grupo4.subastas.dto.request.VincularItemCatalogoRequest;
+import com.grupo4.subastas.dto.response.MedioPagoResponse;
+import com.grupo4.subastas.dto.response.PreRegistracionResponse;
+import com.grupo4.subastas.dto.response.SolicitudItemResponse;
 import com.grupo4.subastas.exception.CustomException;
 import com.grupo4.subastas.model.entity.*;
 import com.grupo4.subastas.repository.*;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,9 +27,20 @@ public class AdminService {
     private final CatalogoRepository catalogoRepository;
     private final ItemCatalogoRepository itemCatalogoRepository;
     private final SolicitudItemRepository solicitudItemRepository;
+    private final SolicitudFotoRepository solicitudFotoRepository;
     private final SubastadorRepository subastadorRepository;
+    private final PreRegistracionRepository preRegistracionRepository;
+    private final MedioPagoRepository medioPagoRepository;
+    private final DuenioRepository duenioRepository;
 
-    private static final Integer SUBSTADOR_SISTEMA_ID = 1;
+    private static final Integer SUBASTADOR_SISTEMA_ID = 1;
+
+    public List<SolicitudItemResponse> listarSolicitudes() {
+        return solicitudItemRepository.findAllByOrderByFechaSolicitudDesc()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
 
     @Transactional
     public void aprobarSolicitudItem(Integer solicitudId) {
@@ -38,11 +53,42 @@ public class AdminService {
 
         solicitud.setEstado("aprobado");
         solicitudItemRepository.save(solicitud);
+
+        Integer duenioId = solicitud.getClienteId();
+        if (!duenioRepository.existsById(duenioId)) {
+            Duenio nuevoDuenio = Duenio.builder()
+                    .identificador(duenioId)
+                    .verificador(1)
+                    .verificacionFinanciera("no")
+                    .verificacionJudicial("no")
+                    .calificacionRiesgo(3)
+                    .build();
+            duenioRepository.save(nuevoDuenio);
+        }
+
+        String descCatalogo = solicitud.getDescripcion();
+        if (descCatalogo != null && descCatalogo.length() > 300) {
+            descCatalogo = descCatalogo.substring(0, 300);
+        }
+        String descCompleta = solicitud.getDescripcionCompleta();
+        if (descCompleta != null && descCompleta.length() > 300) {
+            descCompleta = descCompleta.substring(0, 300);
+        }
+
+        Producto producto = Producto.builder()
+                .fecha(LocalDate.now())
+                .disponible("si")
+                .descripcionCatalogo(descCatalogo)
+                .descripcionCompleta(descCompleta)
+                .revisor(1)
+                .duenio(solicitud.getClienteId())
+                .build();
+        productoRepository.save(producto);
     }
 
     @Transactional
     public Subasta crearSubasta(CrearSubastaRequest request) {
-        Subastador subastador = subastadorRepository.findById(SUBSTADOR_SISTEMA_ID)
+        Subastador subastador = subastadorRepository.findById(SUBASTADOR_SISTEMA_ID)
                 .orElseThrow(() -> new CustomException("No hay subastador disponible", HttpStatus.INTERNAL_SERVER_ERROR));
 
         Subasta subasta = Subasta.builder()
@@ -63,13 +109,25 @@ public class AdminService {
 
     @Transactional
     public Producto crearProducto(CrearProductoRequest request) {
+        Integer duenioId = request.getDuenio();
+        if (!duenioRepository.existsById(duenioId)) {
+            Duenio nuevoDuenio = Duenio.builder()
+                    .identificador(duenioId)
+                    .verificador(1)
+                    .verificacionFinanciera("no")
+                    .verificacionJudicial("no")
+                    .calificacionRiesgo(3)
+                    .build();
+            duenioRepository.save(nuevoDuenio);
+        }
+
         Producto producto = Producto.builder()
                 .fecha(LocalDate.now())
                 .disponible("si")
                 .descripcionCatalogo(request.getDescripcionCatalogo())
                 .descripcionCompleta(request.getDescripcionCompleta())
                 .revisor(1)
-                .duenio(3)
+                .duenio(duenioId)
                 .build();
 
         return productoRepository.save(producto);
@@ -106,5 +164,67 @@ public class AdminService {
                 .build();
 
         return itemCatalogoRepository.save(item);
+    }
+
+    public List<MedioPagoResponse> listarMediosPagoPendientes() {
+        return medioPagoRepository.findAllByVerificado("no")
+                .stream()
+                .map(this::toMedioPagoResponse)
+                .toList();
+    }
+
+    @Transactional
+    public void aprobarMedioPago(Integer id) {
+        MedioPago medio = medioPagoRepository.findById(id)
+                .orElseThrow(() -> new CustomException("Medio de pago no encontrado", HttpStatus.NOT_FOUND));
+
+        if ("si".equals(medio.getVerificado())) {
+            throw new CustomException("El medio de pago ya está verificado", HttpStatus.BAD_REQUEST);
+        }
+
+        medio.setVerificado("si");
+        medioPagoRepository.save(medio);
+    }
+
+    public List<PreRegistracionResponse> listarSolicitudesUsuarios() {
+        return preRegistracionRepository.findAllByEstado("pendiente")
+                .stream()
+                .map(this::toUsuarioResponse)
+                .toList();
+    }
+
+    private MedioPagoResponse toMedioPagoResponse(MedioPago m) {
+        return MedioPagoResponse.builder()
+                .id(m.getIdentificador())
+                .tipo(m.getTipo())
+                .entidad(m.getEntidad())
+                .numero(m.getNumero())
+                .montoGarantizado(m.getMontoGarantizado())
+                .verificado(m.getVerificado())
+                .build();
+    }
+
+    private PreRegistracionResponse toUsuarioResponse(PreRegistracion p) {
+        return PreRegistracionResponse.builder()
+                .id(p.getIdentificador())
+                .nombre(p.getNombre())
+                .apellido(p.getApellido())
+                .email(p.getEmail())
+                .estado(p.getEstado())
+                .fechaSolicitud(p.getFechaSolicitud())
+                .build();
+    }
+
+    private SolicitudItemResponse toResponse(SolicitudItem s) {
+        List<Integer> fotoIds = solicitudFotoRepository.findIdsBySolicitudItemId(s.getIdentificador());
+        return SolicitudItemResponse.builder()
+                .id(s.getIdentificador())
+                .descripcion(s.getDescripcion())
+                .descripcionCompleta(s.getDescripcionCompleta())
+                .precioSugerido(s.getPrecioSugerido())
+                .estado(s.getEstado())
+                .fechaSolicitud(s.getFechaSolicitud())
+                .fotoIds(fotoIds)
+                .build();
     }
 }

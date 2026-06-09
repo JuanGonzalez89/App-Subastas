@@ -12,4 +12,6 @@ public interface MedioPagoRepository extends JpaRepository<MedioPago, Integer> {
 
     // Verifica si el cliente tiene AL MENOS UN medio de pago verificado
     boolean existsByClienteIdAndVerificado(Integer clienteId, String verificado);
+
+    List<MedioPago> findAllByVerificado(String verificado);
 }

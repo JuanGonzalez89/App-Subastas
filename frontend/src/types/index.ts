@@ -5,6 +5,7 @@ export interface UsuarioResponse {
   email: string;
   categoria: string;
   admitido: string;
+  rol?: string;
 }
 
 export interface AuthResponse {
@@ -59,6 +60,8 @@ export interface ItemResponse {
   subastado: string;
   fotoIds: number[];
   descripcionCompleta?: string;
+  disenador?: string;
+  origenDilenador?: string;
 }
 
 export interface PerfilResponse {
@@ -127,6 +130,16 @@ export interface SolicitudItemRequest {
   descripcion: string;
   descripcionCompleta?: string;
   precioSugerido?: number;
+  fotoIds?: number[];
+}
+
+export interface PreRegistracionResponse {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+  estado: string;
+  fechaSolicitud: string;
 }
 
 export interface SolicitudItemResponse {
@@ -136,4 +149,5 @@ export interface SolicitudItemResponse {
   precioSugerido?: number;
   estado: string;
   fechaSolicitud: string;
+  fotoIds?: number[];
 }

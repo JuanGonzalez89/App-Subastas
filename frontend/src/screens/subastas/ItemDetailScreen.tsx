@@ -37,7 +37,7 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 export const ItemDetailScreen = ({ route, navigation }: Props) => {
-  const { itemId, subastaId } = route.params;
+  const { itemId, subastaId, moneda: monedaParam } = route.params;
   const { user } = useAuth();
 
   const [item, setItem]             = useState<ItemResponse | null>(null);
@@ -74,7 +74,7 @@ export const ItemDetailScreen = ({ route, navigation }: Props) => {
         pieza:        item.numeroPieza,
         fotoIds:      item.fotoIds,
         precioBase:   item.precioBase ?? 0,
-        moneda:       'ARS',
+        moneda:       monedaParam ?? 'ARS',
       });
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'No se pudo conectar a la subasta');
@@ -190,10 +190,10 @@ export const ItemDetailScreen = ({ route, navigation }: Props) => {
                   <Ionicons name="person-circle-outline" size={48} color={colors.secondary} />
                 </View>
                 <Text style={styles.diseñadorNombre}>
-                  {(item as any).disenador ?? 'Información no disponible'}
+                  {item.disenador ?? 'Información no disponible'}
                 </Text>
-                {(item as any).origenDilenador ? (
-                  <Text style={styles.diseñadorOrigenText}>{(item as any).origenDilenador}</Text>
+                {item.origenDilenador ? (
+                  <Text style={styles.diseñadorOrigenText}>{item.origenDilenador}</Text>
                 ) : (
                   <Text style={styles.panelEmpty}>
                     No hay información del diseñador para esta pieza.

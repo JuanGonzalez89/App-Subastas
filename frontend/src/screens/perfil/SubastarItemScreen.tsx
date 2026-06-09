@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { listarMisSolicitudesApi, solicitarItemApi } from '../../api/clienteApi';
-import { SolicitudItemRequest, SolicitudItemResponse } from '../../types';
+import { SolicitudItemResponse } from '../../types';
 import { colors } from '../../theme/colors';
 
 const GOLD = '#C9A84C';
@@ -83,6 +83,8 @@ export const SubastarItemScreen = () => {
       e.descripcion = 'La descripción es obligatoria';
     if (fotos.length < MAX_FOTOS)
       e.fotos = `Debés subir al menos ${MAX_FOTOS} fotos del artículo (${fotos.length}/${MAX_FOTOS})`;
+    else if (fotos.length > MAX_FOTOS)
+      e.fotos = `Máximo ${MAX_FOTOS} fotos permitidas (${fotos.length}/${MAX_FOTOS})`;
     if (precio && isNaN(parseFloat(precio)))
       e.precio = 'El precio debe ser un número válido';
     if (!declaro)
@@ -96,12 +98,12 @@ export const SubastarItemScreen = () => {
     if (!validar()) return;
     setSaving(true);
     try {
-      const data: SolicitudItemRequest = {
-        descripcion: descripcion.trim(),
-        descripcionCompleta: descripcionCompleta.trim() || undefined,
-        precioSugerido: precio ? parseFloat(precio) : undefined,
-      };
-      const nueva = await solicitarItemApi(data);
+      const nueva = await solicitarItemApi(
+        descripcion.trim(),
+        descripcionCompleta.trim() || undefined,
+        precio ? parseFloat(precio) : undefined,
+        fotos,
+      );
       setSolicitudes((prev) => [nueva, ...prev]);
       // Reset form
       setShowForm(false);
@@ -230,6 +232,12 @@ export const SubastarItemScreen = () => {
                   <Ionicons name="camera-outline" size={28} color={colors.textSecondary} />
                   <Text style={styles.fotoAddText}>Agregar foto</Text>
                 </TouchableOpacity>
+              )}
+              {fotos.length > MAX_FOTOS && (
+                <View style={styles.fotoAddBoxDisabled}>
+                  <Ionicons name="checkmark-circle-outline" size={28} color={colors.success} />
+                  <Text style={styles.fotoAddText}>Máximo alcanzado</Text>
+                </View>
               )}
             </View>
             {errors.fotos ? <Text style={styles.errorText}>{errors.fotos}</Text> : null}
@@ -383,6 +391,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
   },
   fotoAddText: { fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
+  fotoAddBoxDisabled: {
+    width: 88, height: 88, borderRadius: 10,
+    borderWidth: 2, borderColor: colors.success, borderStyle: 'solid',
+    justifyContent: 'center', alignItems: 'center', gap: 4,
+    backgroundColor: '#F0FFF0',
+  },
 
   // Declaración de propiedad (checkbox)
   declaroRow: {

@@ -40,7 +40,14 @@ export const HistorialScreen = () => {
     );
   }
 
-  const h = historial!;
+  if (!historial) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>No se pudo cargar el historial</Text>
+      </View>
+    );
+  }
+  const h = historial;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>

@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -16,4 +17,5 @@ public class SolicitudItemResponse {
     private BigDecimal precioSugerido;
     private String estado;
     private LocalDate fechaSolicitud;
+    private List<Integer> fotoIds;
 }
