@@ -10,12 +10,15 @@ import java.util.Optional;
 
 public interface SubastaRepository extends JpaRepository<Subasta, Integer> {
 
-    @Query("SELECT s FROM Subasta s LEFT JOIN FETCH s.subastador sub LEFT JOIN FETCH sub.persona")
+    @Query("SELECT s FROM Subasta s LEFT JOIN FETCH s.subastador sub LEFT JOIN FETCH sub.persona LEFT JOIN FETCH s.ext")
     List<Subasta> findAllWithSubastador();
 
-    @Query("SELECT s FROM Subasta s LEFT JOIN FETCH s.subastador sub LEFT JOIN FETCH sub.persona WHERE s.categoria = :categoria")
+    @Query("SELECT s FROM Subasta s LEFT JOIN FETCH s.subastador sub LEFT JOIN FETCH sub.persona LEFT JOIN FETCH s.ext WHERE s.categoria = :categoria")
     List<Subasta> findByCategoriaWithSubastador(@Param("categoria") String categoria);
 
-    @Query("SELECT s FROM Subasta s LEFT JOIN FETCH s.subastador sub LEFT JOIN FETCH sub.persona WHERE s.identificador = :id")
+    @Query("SELECT s FROM Subasta s LEFT JOIN FETCH s.subastador sub LEFT JOIN FETCH sub.persona LEFT JOIN FETCH s.ext WHERE s.identificador = :id")
     Optional<Subasta> findByIdWithSubastador(@Param("id") Integer id);
+
+    @Query("SELECT s FROM Subasta s WHERE s.categoria = :categoria AND s.estado = 'abierta' ORDER BY s.fecha ASC")
+    List<Subasta> findAbiertosByCategoria(@Param("categoria") String categoria);
 }

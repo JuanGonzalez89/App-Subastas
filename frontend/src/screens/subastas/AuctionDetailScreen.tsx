@@ -16,6 +16,7 @@ import { listarItemsApi, obtenerSubastaApi } from '../../api/subastasApi';
 import { ItemResponse, SubastaResponse } from '../../types';
 import { colors } from '../../theme/colors';
 import { SubastasStackParamList } from '../../navigation/SubastasStack';
+import { useAuth } from '../../context/AuthContext';
 
 type Props = {
   navigation: StackNavigationProp<SubastasStackParamList, 'AuctionDetail'>;
@@ -24,6 +25,7 @@ type Props = {
 
 export const AuctionDetailScreen = ({ navigation, route }: Props) => {
   const { subastaId } = route.params;
+  const { isGuest } = useAuth();
   const [subasta, setSubasta] = useState<SubastaResponse | null>(null);
   const [items, setItems] = useState<ItemResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,7 +89,9 @@ export const AuctionDetailScreen = ({ navigation, route }: Props) => {
           <View style={styles.alertaBanner}>
             <Ionicons name="lock-closed-outline" size={16} color={colors.warning} />
             <Text style={styles.alertaText}>
-              Tu categoría no alcanza para pujar en esta subasta
+              {isGuest
+                ? 'Registrate para ver precios y participar en esta subasta'
+                : 'Tu categoría no alcanza para pujar en esta subasta'}
             </Text>
           </View>
         )}

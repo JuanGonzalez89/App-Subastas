@@ -12,7 +12,7 @@
 
 
 -- ============================================================
--- PARTE 1: ESQUEMA BASE (tablas del profesor)
+-- PARTE 1: ESQUEMA BASE (tablas del profesor — sin modificar)
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS paises (
@@ -29,12 +29,9 @@ CREATE TABLE IF NOT EXISTS personas (
     identificador SERIAL       NOT NULL,
     documento     VARCHAR(20)  NOT NULL,
     nombre        VARCHAR(150) NOT NULL,
-    apellido      VARCHAR(150),
-    email         VARCHAR(250) UNIQUE,
     direccion     VARCHAR(250),
     estado        VARCHAR(15)  CHECK (estado IN ('activo', 'inactivo')),
     foto          BYTEA,
-    rol           VARCHAR(10)  DEFAULT 'USER',
     CONSTRAINT pk_personas PRIMARY KEY (identificador)
 );
 
@@ -69,7 +66,6 @@ CREATE TABLE IF NOT EXISTS clientes (
     admitido      VARCHAR(2)  CHECK (admitido IN ('si','no')),
     categoria     VARCHAR(10) CHECK (categoria IN ('comun','especial','plata','oro','platino')),
     verificador   INT         NOT NULL,
-    clavepersonal VARCHAR(255),
     CONSTRAINT pk_clientes PRIMARY KEY (identificador),
     CONSTRAINT fk_clientes_personas  FOREIGN KEY (identificador) REFERENCES personas(identificador),
     CONSTRAINT fk_clientes_empleados FOREIGN KEY (verificador)   REFERENCES empleados(identificador),
@@ -107,7 +103,6 @@ CREATE TABLE IF NOT EXISTS subastas (
     tienedeposito       VARCHAR(2)   CHECK (tienedeposito  IN ('si','no')),
     seguridadpropia     VARCHAR(2)   CHECK (seguridadpropia IN ('si','no')),
     categoria           VARCHAR(10)  CHECK (categoria IN ('comun','especial','plata','oro','platino')),
-    moneda              VARCHAR(3)   DEFAULT 'ARS' CHECK (moneda IN ('ARS','USD')),
     CONSTRAINT pk_subastas PRIMARY KEY (identificador),
     CONSTRAINT fk_subastas_subastadores FOREIGN KEY (subastador) REFERENCES subastadores(identificador)
 );
@@ -173,7 +168,6 @@ CREATE TABLE IF NOT EXISTS pujos (
     item          INT           NOT NULL,
     importe       DECIMAL(18,2) NOT NULL CHECK (importe > 0.01),
     ganador       VARCHAR(2)    DEFAULT 'no' CHECK (ganador IN ('si','no')),
-    fechahora     TIMESTAMP     DEFAULT NOW(),
     CONSTRAINT pk_pujos PRIMARY KEY (identificador),
     CONSTRAINT fk_pujos_asistentes    FOREIGN KEY (asistente) REFERENCES asistentes(identificador),
     CONSTRAINT fk_pujos_itemscatalogo FOREIGN KEY (item)      REFERENCES itemscatalogo(identificador)
@@ -196,9 +190,37 @@ CREATE TABLE IF NOT EXISTS registrodesubasta (
 
 
 -- ============================================================
--- PARTE 2: TABLAS PROPIAS (sprints 1, 4 y 5)
+-- PARTE 2: TABLAS PROPIAS (columnas extra + sprints)
 -- ============================================================
 
+-- Datos extra de login/perfil que no pueden ir en personas ni clientes
+CREATE TABLE IF NOT EXISTS usuarios (
+    identificador INT          NOT NULL,
+    apellido      VARCHAR(150),
+    email         VARCHAR(250) UNIQUE,
+    clavepersonal VARCHAR(255),
+    rol           VARCHAR(10)  DEFAULT 'USER',
+    CONSTRAINT pk_usuarios PRIMARY KEY (identificador),
+    CONSTRAINT fk_usuarios_personas FOREIGN KEY (identificador) REFERENCES personas(identificador)
+);
+
+-- Datos extra de subasta (moneda) que no pueden ir en subastas
+CREATE TABLE IF NOT EXISTS subastas_ext (
+    subasta INT        NOT NULL,
+    moneda  VARCHAR(3) DEFAULT 'ARS',
+    CONSTRAINT pk_subastas_ext PRIMARY KEY (subasta),
+    CONSTRAINT fk_subastas_ext_subastas FOREIGN KEY (subasta) REFERENCES subastas(identificador)
+);
+
+-- Datos extra de pujos (fechahora) que no pueden ir en pujos
+CREATE TABLE IF NOT EXISTS pujos_ext (
+    pujo      INT       NOT NULL,
+    fechahora TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT pk_pujos_ext PRIMARY KEY (pujo),
+    CONSTRAINT fk_pujos_ext_pujos FOREIGN KEY (pujo) REFERENCES pujos(identificador)
+);
+
+-- Pre-registraciones (sprint 1)
 CREATE TABLE IF NOT EXISTS preregistraciones (
     identificador   SERIAL       NOT NULL,
     nombre          VARCHAR(150) NOT NULL,
@@ -215,6 +237,7 @@ CREATE TABLE IF NOT EXISTS preregistraciones (
     CONSTRAINT pk_preregistraciones PRIMARY KEY (identificador)
 );
 
+-- Tokens de confirmación (sprint 1)
 CREATE TABLE IF NOT EXISTS tokensconfirmacion (
     identificador   SERIAL       NOT NULL,
     clienteid       INT          NOT NULL,
@@ -225,6 +248,7 @@ CREATE TABLE IF NOT EXISTS tokensconfirmacion (
     CONSTRAINT fk_tokens_clientes FOREIGN KEY (clienteid) REFERENCES clientes(identificador)
 );
 
+-- Medios de pago (sprint 3)
 CREATE TABLE IF NOT EXISTS mediospago (
     identificador    SERIAL        NOT NULL,
     cliente          INT           NOT NULL,
@@ -238,6 +262,7 @@ CREATE TABLE IF NOT EXISTS mediospago (
     CONSTRAINT fk_mediospago_clientes FOREIGN KEY (cliente) REFERENCES clientes(identificador)
 );
 
+-- Solicitudes de items (sprint 5)
 CREATE TABLE IF NOT EXISTS solicitudes_items (
     identificador        SERIAL        PRIMARY KEY,
     cliente              INTEGER       NOT NULL REFERENCES clientes(identificador),
@@ -248,17 +273,37 @@ CREATE TABLE IF NOT EXISTS solicitudes_items (
     fecha_solicitud      DATE          DEFAULT CURRENT_DATE
 );
 
+-- Fotos de solicitudes (sprint 5)
 CREATE TABLE IF NOT EXISTS solicitudes_fotos (
-    identificador    SERIAL  PRIMARY KEY,
-    solicitud_item   INTEGER NOT NULL REFERENCES solicitudes_items(identificador),
-    foto             BYTEA,
-    orden            INTEGER
+    identificador  SERIAL  PRIMARY KEY,
+    solicitud_item INTEGER NOT NULL REFERENCES solicitudes_items(identificador),
+    foto           BYTEA,
+    orden          INTEGER
 );
 
+
 -- ============================================================
--- PARTE 3: DATOS SEMILLA (seed)
+-- PARTE 3: ÍNDICES
 -- ============================================================
 
+CREATE INDEX IF NOT EXISTS idx_productos_revisor        ON productos(revisor);
+CREATE INDEX IF NOT EXISTS idx_productos_duenio         ON productos(duenio);
+CREATE INDEX IF NOT EXISTS idx_catalogos_subasta        ON catalogos(subasta);
+CREATE INDEX IF NOT EXISTS idx_itemscatalogo_catalogo   ON itemscatalogo(catalogo);
+CREATE INDEX IF NOT EXISTS idx_itemscatalogo_producto   ON itemscatalogo(producto);
+CREATE INDEX IF NOT EXISTS idx_asistentes_cliente       ON asistentes(cliente);
+CREATE INDEX IF NOT EXISTS idx_asistentes_subasta       ON asistentes(subasta);
+CREATE INDEX IF NOT EXISTS idx_pujos_asistente          ON pujos(asistente);
+CREATE INDEX IF NOT EXISTS idx_pujos_item               ON pujos(item);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_items_cliente ON solicitudes_items(cliente);
+CREATE INDEX IF NOT EXISTS idx_tokensconfirmacion_token  ON tokensconfirmacion(token);
+
+
+-- ============================================================
+-- PARTE 4: DATOS SEMILLA
+-- ============================================================
+
+-- Países
 INSERT INTO paises (numero, nombre, nombrecorto, capital, nacionalidad, idiomas) VALUES
   (1,  'Argentina',      'AR', 'Buenos Aires',   'Argentino/a',    'Español'),
   (2,  'Brasil',         'BR', 'Brasilia',        'Brasileño/a',    'Portugués'),
@@ -272,21 +317,18 @@ INSERT INTO paises (numero, nombre, nombrecorto, capital, nacionalidad, idiomas)
   (10, 'España',         'ES', 'Madrid',          'Español/a',      'Español')
 ON CONFLICT (numero) DO NOTHING;
 
--- Empleado SISTEMA (requerido como FK en clientes.verificador)
-INSERT INTO personas (documento, nombre, apellido, email, estado, rol)
-VALUES ('SISTEMA', 'Sistema', 'Automatico', 'sistema@subastas.com', 'activo', 'ADMIN')
-ON CONFLICT (email) DO NOTHING;
+-- Empleado SISTEMA (requerido como FK verificador en clientes y duenios)
+DO $$
+DECLARE
+    v_id INT;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM personas WHERE documento = 'SISTEMA') THEN
+        INSERT INTO personas (documento, nombre, estado)
+        VALUES ('SISTEMA', 'Sistema Automatico', 'activo')
+        RETURNING identificador INTO v_id;
 
-INSERT INTO empleados (identificador, cargo)
-SELECT identificador, 'SISTEMA' FROM personas WHERE email = 'sistema@subastas.com'
-ON CONFLICT (identificador) DO NOTHING;
+        INSERT INTO empleados (identificador, cargo)
+        VALUES (v_id, 'SISTEMA');
+    END IF;
+END $$;
 
--- Admin por defecto (login con email: admin@subastas.com, clave: admin123)
-INSERT INTO personas (documento, nombre, apellido, email, estado, rol)
-VALUES ('ADMIN-001', 'Admin', 'Principal', 'admin@subastas.com', 'activo', 'ADMIN')
-ON CONFLICT (email) DO NOTHING;
-
-INSERT INTO clientes (identificador, admitido, categoria, verificador, clavepersonal)
-SELECT identificador, 'si', 'platino', 1, '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
-FROM personas WHERE email = 'admin@subastas.com'
-ON CONFLICT (identificador) DO NOTHING;

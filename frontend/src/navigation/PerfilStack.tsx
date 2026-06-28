@@ -4,6 +4,7 @@ import { ProfileScreen }         from '../screens/perfil/ProfileScreen';
 import { PaymentMethodsScreen }  from '../screens/perfil/PaymentMethodsScreen';
 import { HistorialScreen }       from '../screens/perfil/HistorialScreen';
 import { SubastarItemScreen }    from '../screens/perfil/SubastarItemScreen';
+import { MisComprasScreen }      from '../screens/perfil/MisComprasScreen';
 import { colors } from '../theme/colors';
 
 export type PerfilStackParamList = {
@@ -11,6 +12,7 @@ export type PerfilStackParamList = {
   PaymentMethods: undefined;
   Historial:      undefined;
   SubastarItem:   undefined;
+  MisCompras:     undefined;
 };
 
 const Stack = createStackNavigator<PerfilStackParamList>();
@@ -27,5 +29,6 @@ export const PerfilStack = () => (
     <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Medios de Pago' }} />
     <Stack.Screen name="Historial"      component={HistorialScreen}      options={{ title: 'Mi Historial' }} />
     <Stack.Screen name="SubastarItem"   component={SubastarItemScreen}   options={{ title: 'Subastar Artículo' }} />
+    <Stack.Screen name="MisCompras"     component={MisComprasScreen}     options={{ title: 'Mis Compras' }} />
   </Stack.Navigator>
 );

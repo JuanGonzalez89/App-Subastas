@@ -23,6 +23,14 @@ public interface PujoRepository extends JpaRepository<Pujo, Integer> {
     // Verificar si un asistente ya pujó en un item
     boolean existsByAsistenteIdAndItemId(Integer asistenteId, Integer itemId);
 
+    // Última puja de un ítem (la de mayor importe)
+    @Query("SELECT p FROM Pujo p WHERE p.itemId = :itemId ORDER BY p.importe DESC")
+    List<Pujo> findTopByItemIdOrderByImporteDesc(@Param("itemId") Integer itemId);
+
+    // Suma de las pujas más altas del cliente en ítems donde va ganando (para validar cheque certificado)
+    @Query("SELECT COALESCE(SUM(p.importe), 0) FROM Pujo p WHERE p.asistenteId IN :asistenteIds AND p.importe = (SELECT MAX(p2.importe) FROM Pujo p2 WHERE p2.itemId = p.itemId) AND p.ganador != 'si'")
+    BigDecimal sumPujasGanandoByAsistenteIds(@Param("asistenteIds") List<Integer> asistenteIds);
+
     // Todas las pujas de una lista de asistentes (para historial)
     List<Pujo> findByAsistenteIdIn(List<Integer> asistenteIds);
 

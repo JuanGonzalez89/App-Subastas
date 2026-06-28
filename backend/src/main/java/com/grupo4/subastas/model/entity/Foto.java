@@ -20,7 +20,8 @@ public class Foto {
     @JoinColumn(name = "producto")
     private Producto producto;
 
-    @Lob
+    // Sin @Lob: la columna es bytea. Con @Lob, PostgreSQL lo trata como Large
+    // Object (OID/bigint) y falla al insertar/leer en una columna bytea.
     @Column(name = "foto")
     private byte[] foto;
 }

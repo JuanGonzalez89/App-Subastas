@@ -16,17 +16,37 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { listarMisSolicitudesApi, solicitarItemApi } from '../../api/clienteApi';
+import {
+  aceptarCondicionesApi,
+  listarMisSolicitudesApi,
+  rechazarCondicionesApi,
+  solicitarItemApi,
+} from '../../api/clienteApi';
 import { SolicitudItemResponse } from '../../types';
 import { colors } from '../../theme/colors';
 
 const GOLD = '#C9A84C';
-const MAX_FOTOS = 6;
+const MIN_FOTOS = 6;
+const MAX_FOTOS = 20;
 
 const ESTADO_COLOR: Record<string, string> = {
-  pendiente: '#F59E0B',
-  aprobado:  '#27AE60',
-  rechazado: colors.error,
+  pendiente:             '#F59E0B',
+  interesado:            '#2196F3',
+  en_inspeccion:         '#9C27B0',
+  rechazado:             colors.error,
+  condiciones_propuestas: GOLD,
+  aceptado:              '#27AE60',
+  rechazado_duenio:      colors.error,
+};
+
+const ESTADO_LABEL: Record<string, string> = {
+  pendiente:             'En revisión',
+  interesado:            'Empresa interesada',
+  en_inspeccion:         'En inspección',
+  rechazado:             'Rechazado',
+  condiciones_propuestas: 'Condiciones propuestas',
+  aceptado:              'Aceptado',
+  rechazado_duenio:      'Condiciones rechazadas',
 };
 
 export const SubastarItemScreen = () => {
@@ -34,6 +54,7 @@ export const SubastarItemScreen = () => {
   const [loadingList, setLoadingList]   = useState(true);
   const [showForm, setShowForm]         = useState(false);
   const [saving, setSaving]             = useState(false);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   // Campos del formulario
   const [descripcion, setDescripcion]               = useState('');
@@ -76,15 +97,65 @@ export const SubastarItemScreen = () => {
   const eliminarFoto = (idx: number) =>
     setFotos((prev) => prev.filter((_, i) => i !== idx));
 
+  // ── Aceptar / Rechazar condiciones ───────────────────────────────────────
+  const handleAceptarCondiciones = async (id: number) => {
+    Alert.alert(
+      'Aceptar condiciones',
+      '¿Confirmás que aceptás el valor base, comisiones y fecha de subasta propuestos por la empresa?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Aceptar',
+          onPress: async () => {
+            setActionLoading(id);
+            try {
+              const updated = await aceptarCondicionesApi(id);
+              setSolicitudes((prev) => prev.map((s) => (s.id === id ? updated : s)));
+            } catch (e: any) {
+              Alert.alert('Error', e.message);
+            } finally {
+              setActionLoading(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleRechazarCondiciones = async (id: number) => {
+    Alert.alert(
+      'Rechazar condiciones',
+      'Si rechazás, el bien te será devuelto con cargo a tu cuenta.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Rechazar',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoading(id);
+            try {
+              const updated = await rechazarCondicionesApi(id);
+              setSolicitudes((prev) => prev.map((s) => (s.id === id ? updated : s)));
+            } catch (e: any) {
+              Alert.alert('Error', e.message);
+            } finally {
+              setActionLoading(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   // ── Validación ────────────────────────────────────────────────────────────
   const validar = (): boolean => {
     const e: Record<string, string> = {};
     if (!descripcion.trim())
       e.descripcion = 'La descripción es obligatoria';
-    if (fotos.length < MAX_FOTOS)
-      e.fotos = `Debés subir al menos ${MAX_FOTOS} fotos del artículo (${fotos.length}/${MAX_FOTOS})`;
+    if (fotos.length < MIN_FOTOS)
+      e.fotos = `Debés subir al menos ${MIN_FOTOS} fotos del artículo (${fotos.length}/${MIN_FOTOS})`;
     else if (fotos.length > MAX_FOTOS)
-      e.fotos = `Máximo ${MAX_FOTOS} fotos permitidas (${fotos.length}/${MAX_FOTOS})`;
+      e.fotos = `Máximo ${MAX_FOTOS} fotos permitidas`;
     if (precio && isNaN(parseFloat(precio)))
       e.precio = 'El precio debe ser un número válido';
     if (!declaro)
@@ -151,7 +222,14 @@ export const SubastarItemScreen = () => {
               ? <Text style={styles.listHeader}>Mis solicitudes ({solicitudes.length})</Text>
               : null
           }
-          renderItem={({ item }) => <SolicitudCard solicitud={item} />}
+          renderItem={({ item }) => (
+            <SolicitudCard
+              solicitud={item}
+              actionLoading={actionLoading === item.id}
+              onAceptar={() => handleAceptarCondiciones(item.id)}
+              onRechazar={() => handleRechazarCondiciones(item.id)}
+            />
+          )}
         />
       )}
 
@@ -213,7 +291,7 @@ export const SubastarItemScreen = () => {
 
             {/* ── Fotos (mínimo 6, requerido por TPO) ── */}
             <Text style={styles.fieldLabel}>
-              Fotos del artículo * ({fotos.length}/{MAX_FOTOS} mínimo)
+              Fotos del artículo * ({fotos.length}/{MIN_FOTOS} mínimo)
             </Text>
             <View style={styles.fotosGrid}>
               {fotos.map((uri, idx) => (
@@ -232,12 +310,6 @@ export const SubastarItemScreen = () => {
                   <Ionicons name="camera-outline" size={28} color={colors.textSecondary} />
                   <Text style={styles.fotoAddText}>Agregar foto</Text>
                 </TouchableOpacity>
-              )}
-              {fotos.length > MAX_FOTOS && (
-                <View style={styles.fotoAddBoxDisabled}>
-                  <Ionicons name="checkmark-circle-outline" size={28} color={colors.success} />
-                  <Text style={styles.fotoAddText}>Máximo alcanzado</Text>
-                </View>
               )}
             </View>
             {errors.fotos ? <Text style={styles.errorText}>{errors.fotos}</Text> : null}
@@ -287,10 +359,20 @@ export const SubastarItemScreen = () => {
 };
 
 // ── Card de solicitud ─────────────────────────────────────────────────────────
-const SolicitudCard = ({ solicitud }: { solicitud: SolicitudItemResponse }) => {
+interface SolicitudCardProps {
+  solicitud: SolicitudItemResponse;
+  actionLoading: boolean;
+  onAceptar: () => void;
+  onRechazar: () => void;
+}
+
+const SolicitudCard = ({ solicitud, actionLoading, onAceptar, onRechazar }: SolicitudCardProps) => {
   const estadoColor = ESTADO_COLOR[solicitud.estado] ?? colors.textSecondary;
+  const estadoLabel = ESTADO_LABEL[solicitud.estado] ?? solicitud.estado;
+
   return (
     <View style={styles.card}>
+      {/* Encabezado */}
       <View style={styles.cardTop}>
         <View style={styles.cardIcon}>
           <Ionicons name="cube-outline" size={20} color={colors.primary} />
@@ -299,20 +381,129 @@ const SolicitudCard = ({ solicitud }: { solicitud: SolicitudItemResponse }) => {
           <Text style={styles.cardDesc} numberOfLines={2}>{solicitud.descripcion}</Text>
           <Text style={styles.cardFecha}>{solicitud.fechaSolicitud}</Text>
         </View>
-        <View style={[styles.estadoBadge, { backgroundColor: estadoColor + '20' }]}>
-          <Text style={[styles.estadoText, { color: estadoColor }]}>
-            {solicitud.estado.toUpperCase()}
-          </Text>
+        <View style={[styles.estadoBadge, { backgroundColor: estadoColor + '22' }]}>
+          <Text style={[styles.estadoText, { color: estadoColor }]}>{estadoLabel.toUpperCase()}</Text>
         </View>
       </View>
-      {solicitud.precioSugerido != null && (
-        <Text style={styles.cardPrecio}>
-          Precio sugerido: ${Number(solicitud.precioSugerido).toLocaleString('es-AR')}
-        </Text>
+
+      {/* Etapa 1: pendiente */}
+      {solicitud.estado === 'pendiente' && (
+        <InfoLinea icon="time-outline" color="#F59E0B"
+          text="La empresa está revisando tu solicitud. Te notificaremos cuando haya novedades." />
+      )}
+
+      {/* Etapa 2: interesado — empresa da dirección de envío */}
+      {solicitud.estado === 'interesado' && (
+        <View style={styles.infoBloque}>
+          <InfoLinea icon="checkmark-circle-outline" color="#2196F3"
+            text="¡La empresa está interesada en tu artículo!" />
+          {solicitud.direccionEnvio && (
+            <InfoLinea icon="location-outline" color="#2196F3"
+              text={`Enviá el artículo a: ${solicitud.direccionEnvio}`} bold />
+          )}
+          <InfoLinea icon="alert-circle-outline" color="#F59E0B"
+            text="Importante: si el artículo no es aprobado tras la inspección, la devolución será con cargo a tu cuenta." />
+        </View>
+      )}
+
+      {/* Etapa 3: en inspección */}
+      {solicitud.estado === 'en_inspeccion' && (
+        <InfoLinea icon="search-outline" color="#9C27B0"
+          text="Tu artículo fue recibido y está siendo inspeccionado por nuestros expertos." />
+      )}
+
+      {/* Etapa 3b: rechazado */}
+      {solicitud.estado === 'rechazado' && (
+        <View style={styles.infoBloque}>
+          <InfoLinea icon="close-circle-outline" color={colors.error}
+            text="El artículo no fue aceptado." />
+          {solicitud.motivoRechazo && (
+            <InfoLinea icon="document-text-outline" color={colors.error}
+              text={`Motivo: ${solicitud.motivoRechazo}`} />
+          )}
+          <InfoLinea icon="return-down-back-outline" color={colors.textSecondary}
+            text="El bien será devuelto con cargo a tu cuenta." />
+        </View>
+      )}
+
+      {/* Etapa 4: condiciones propuestas */}
+      {solicitud.estado === 'condiciones_propuestas' && (
+        <View style={styles.infoBloque}>
+          <InfoLinea icon="pricetag-outline" color={GOLD}
+            text="La empresa te propone las siguientes condiciones:" />
+          {solicitud.valorBase != null && (
+            <InfoLinea icon="cash-outline" color={GOLD}
+              text={`Valor base asignado: $${Number(solicitud.valorBase).toLocaleString('es-AR')}`} bold />
+          )}
+          {solicitud.comision != null && (
+            <InfoLinea icon="trending-up-outline" color={GOLD}
+              text={`Comisión de la empresa: ${solicitud.comision}%`} />
+          )}
+          {solicitud.fechaSubasta && (
+            <InfoLinea icon="calendar-outline" color={colors.textSecondary}
+              text={`Fecha de subasta: ${solicitud.fechaSubasta}${solicitud.horaSubasta ? ' a las ' + solicitud.horaSubasta : ''}`} />
+          )}
+          {solicitud.lugarSubasta && (
+            <InfoLinea icon="location-outline" color={colors.textSecondary}
+              text={`Lugar: ${solicitud.lugarSubasta}`} />
+          )}
+          <View style={styles.botonesRow}>
+            <TouchableOpacity
+              style={[styles.btnAceptar, actionLoading && { opacity: 0.6 }]}
+              onPress={onAceptar}
+              disabled={actionLoading}
+            >
+              {actionLoading
+                ? <ActivityIndicator size="small" color="#FFF" />
+                : <Text style={styles.btnText}>Aceptar condiciones</Text>
+              }
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.btnRechazar, actionLoading && { opacity: 0.6 }]}
+              onPress={onRechazar}
+              disabled={actionLoading}
+            >
+              <Text style={[styles.btnText, { color: colors.error }]}>Rechazar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Etapa 5a: aceptado */}
+      {solicitud.estado === 'aceptado' && (
+        <View style={styles.infoBloque}>
+          <InfoLinea icon="checkmark-done-circle-outline" color="#27AE60"
+            text="¡Aceptaste las condiciones! Tu artículo será incluido en la subasta." />
+          {solicitud.depositoUbicacion && (
+            <InfoLinea icon="business-outline" color={colors.textSecondary}
+              text={`Depósito: ${solicitud.depositoUbicacion}`} />
+          )}
+          {solicitud.polizaSeguro && (
+            <InfoLinea icon="shield-checkmark-outline" color={colors.textSecondary}
+              text={`Póliza de seguro: ${solicitud.polizaSeguro}`} />
+          )}
+        </View>
+      )}
+
+      {/* Etapa 5b: rechazado por dueño */}
+      {solicitud.estado === 'rechazado_duenio' && (
+        <InfoLinea icon="close-circle-outline" color={colors.error}
+          text="Rechazaste las condiciones propuestas. El bien será devuelto con los gastos correspondientes." />
       )}
     </View>
   );
 };
+
+const InfoLinea = ({
+  icon, color, text, bold = false,
+}: {
+  icon: any; color: string; text: string; bold?: boolean;
+}) => (
+  <View style={styles.infoLinea}>
+    <Ionicons name={icon} size={16} color={color} style={{ marginTop: 2 }} />
+    <Text style={[styles.infoLineaText, bold && { fontWeight: '700' }]}>{text}</Text>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
@@ -352,6 +543,23 @@ const styles = StyleSheet.create({
   estadoBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   estadoText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
   cardPrecio: { fontSize: 13, color: colors.textSecondary },
+
+  // Info por estado
+  infoBloque: { gap: 8, marginTop: 4 },
+  infoLinea: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  infoLineaText: { flex: 1, fontSize: 13, color: colors.textPrimary, lineHeight: 19 },
+
+  // Botones condiciones
+  botonesRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  btnAceptar: {
+    flex: 1, backgroundColor: '#27AE60', borderRadius: 10,
+    paddingVertical: 11, alignItems: 'center',
+  },
+  btnRechazar: {
+    flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center',
+    borderWidth: 1.5, borderColor: colors.error,
+  },
+  btnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
 
   // Formulario bottom sheet
   formWrapper: {

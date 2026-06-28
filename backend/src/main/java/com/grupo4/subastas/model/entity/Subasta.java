@@ -47,6 +47,6 @@ public class Subasta {
     @Column(name = "categoria", length = 10)
     private String categoria;
 
-    @Column(name = "moneda", length = 3)
-    private String moneda;
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "subasta")
+    private SubastaExt ext;
 }

@@ -29,15 +29,13 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Admin endpoints → solo ADMIN
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/auth/admin/**").hasRole("ADMIN")
-                .requestMatchers("/auth/registro/**").permitAll()
-                .requestMatchers("/auth/login").permitAll()
-                // Pujas y conexión a subasta → siempre requieren autenticación
+                .requestMatchers("/auth/**").permitAll()
+                // Endpoints de gestión de solicitudes (acciones de empresa — sin cuenta admin)
+                .requestMatchers("/solicitudes-items/**").permitAll()
+                // Pujas y conexión a subasta → requieren autenticación
                 .requestMatchers("/subastas/*/conectar").authenticated()
                 .requestMatchers("/subastas/*/pujas").authenticated()
-                // Resto de subastas/items/fotos → público (lectura)
+                // Lectura pública de subastas/items/fotos
                 .requestMatchers(HttpMethod.GET, "/subastas/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/items/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/fotos/**").permitAll()

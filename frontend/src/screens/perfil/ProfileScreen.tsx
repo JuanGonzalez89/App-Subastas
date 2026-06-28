@@ -30,7 +30,7 @@ const CATEGORIA_LABELS: Record<string, string> = {
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 export const ProfileScreen = ({ navigation }: Props) => {
-  const { logout, isAdmin } = useAuth();
+  const { logout } = useAuth();
   const [perfil, setPerfil] = useState<PerfilResponse | null>(null);
   const [historial, setHistorial] = useState<HistorialResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +56,19 @@ export const ProfileScreen = ({ navigation }: Props) => {
   if (error || !perfil) {
     return (
       <View style={styles.center}>
+        <Ionicons name="alert-circle-outline" size={44} color={colors.error} />
         <Text style={styles.errorText}>{error || 'No se pudo cargar el perfil'}</Text>
+        <Text style={styles.errorHint}>
+          Si el problema persiste, cerrá sesión y volvé a iniciar sesión.
+        </Text>
+        <TouchableOpacity
+          style={[styles.logoutBtn, { marginTop: 24, paddingHorizontal: 28 }]}
+          onPress={logout}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="log-out-outline" size={18} color={colors.error} />
+          <Text style={styles.logoutText}>Cerrar sesión</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -168,6 +180,20 @@ export const ProfileScreen = ({ navigation }: Props) => {
 
         <TouchableOpacity
           style={styles.menuItem}
+          onPress={() => navigation.navigate('MisCompras')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuLeft}>
+            <View style={[styles.menuIcon, { backgroundColor: '#2E7D32' }]}>
+              <Ionicons name="bag-handle-outline" size={20} color="#FFFFFF" />
+            </View>
+            <Text style={styles.menuLabel}>Mis compras</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textDisabled} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={() => navigation.navigate('SubastarItem')}
           activeOpacity={0.8}
         >
@@ -179,17 +205,6 @@ export const ProfileScreen = ({ navigation }: Props) => {
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textDisabled} />
         </TouchableOpacity>
-
-        {isAdmin && (
-          <View style={[styles.menuItem, { opacity: 0.8 }]}>
-            <View style={styles.menuLeft}>
-              <View style={[styles.menuIcon, { backgroundColor: '#7C3AED' }]}>
-                <Ionicons name="shield-checkmark-outline" size={20} color="#FFFFFF" />
-              </View>
-              <Text style={styles.menuLabel}>Panel de Administración (en pestaña Admin)</Text>
-            </View>
-          </View>
-        )}
 
         {/* ── Cerrar sesión ── */}
         <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.85}>
@@ -224,7 +239,8 @@ const InfoRow = ({ icon, label, value }: { icon: any; label: string; value: stri
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  errorText: { fontSize: 14, color: colors.error, textAlign: 'center' },
+  errorText: { fontSize: 15, color: colors.error, textAlign: 'center', marginTop: 12, fontWeight: '600' },
+  errorHint: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 19 },
   scroll: { padding: 20, gap: 16, paddingBottom: 40 },
 
   // Hero

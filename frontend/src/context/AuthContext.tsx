@@ -7,10 +7,10 @@ interface AuthContextType {
   user: UsuarioResponse | null;
   token: string | null;
   loading: boolean;
+  isGuest: boolean;
   login: (data: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
-  isAdmin: boolean;
-  userRole: string | null;
+  enterAsGuest: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -19,9 +19,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<UsuarioResponse | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const isAdmin = user?.rol === 'ADMIN';
-  const userRole = user?.rol ?? null;
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
     cargarSesionGuardada();
@@ -36,8 +34,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           setUser(JSON.parse(storedUser));
         } catch {
-          await SecureStore.deleteItemAsync('token');
-          await SecureStore.deleteItemAsync('user');
+          try { await SecureStore.deleteItemAsync('token'); } catch (_) {}
+          try { await SecureStore.deleteItemAsync('user'); } catch (_) {}
         }
       }
     } catch (_) {
@@ -52,17 +50,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await SecureStore.setItemAsync('user', JSON.stringify(response.usuario));
     setToken(response.token);
     setUser(response.usuario);
+    setIsGuest(false);
   };
 
   const logout = async () => {
-    await SecureStore.deleteItemAsync('token');
-    await SecureStore.deleteItemAsync('user');
+    try {
+      await SecureStore.deleteItemAsync('token');
+      await SecureStore.deleteItemAsync('user');
+    } catch (_) {}
     setToken(null);
     setUser(null);
+    setIsGuest(false);
+  };
+
+  const enterAsGuest = () => {
+    setIsGuest(true);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, isAdmin, userRole }}>
+    <AuthContext.Provider value={{ user, token, loading, isGuest, login, logout, enterAsGuest }}>
       {children}
     </AuthContext.Provider>
   );

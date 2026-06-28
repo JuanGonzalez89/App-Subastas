@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -29,12 +29,15 @@ export const RegisterDNIScreen = ({ route, navigation }: Props) => {
   const [dorso, setDorso]         = useState<string | null>(null);
   const [dorsoB64, setDorsoB64]   = useState<string | undefined>(undefined);
   const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
 
   const pickImage = async (side: 'frente' | 'dorso') => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso denegado', 'Necesitamos acceso a tu galería para subir el DNI.');
-      return;
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        setError('Necesitamos acceso a tu galería para subir el DNI.');
+        return;
+      }
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: 'images',
@@ -46,14 +49,16 @@ export const RegisterDNIScreen = ({ route, navigation }: Props) => {
       const b64 = result.assets[0].base64 ?? undefined;
       if (side === 'frente') { setFrente(uri); setFrenteB64(b64); }
       else                   { setDorso(uri);  setDorsoB64(b64);  }
+      setError('');
     }
   };
 
   const handleContinuar = async () => {
-    if (!frente || !dorso) {
-      Alert.alert('Fotos requeridas', 'Por favor subí ambas fotos del DNI (frente y dorso).');
+    if (Platform.OS !== 'web' && (!frente || !dorso)) {
+      setError('Por favor subí ambas fotos del DNI (frente y dorso).');
       return;
     }
+    setError('');
     setLoading(true);
     try {
       await registroPaso1Api({
@@ -66,13 +71,9 @@ export const RegisterDNIScreen = ({ route, navigation }: Props) => {
         documentoFrente:  frenteB64,
         documentoDorso:   dorsoB64,
       });
-      Alert.alert(
-        'Solicitud enviada',
-        'La empresa revisará tus documentos. Cuando sea aprobado recibirás un email con tu token.',
-        [{ text: 'Entendido', onPress: () => navigation.navigate('RegisterStep3', { email: params.email }) }]
-      );
+      navigation.navigate('RegisterStep3', { email: params.email });
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      setError(e.message ?? 'Ocurrió un error. Intentá de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -134,6 +135,13 @@ export const RegisterDNIScreen = ({ route, navigation }: Props) => {
           </Text>
         </View>
 
+        {error ? (
+          <View style={styles.errorBox}>
+            <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
         <TouchableOpacity
           style={[styles.continueBtn, loading && styles.continueBtnDisabled]}
           onPress={handleContinuar}
@@ -191,6 +199,18 @@ const styles = StyleSheet.create({
   uploadTitle: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   uploadSub: { fontSize: 12, color: colors.textSecondary },
   disclaimer: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFF0F0',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.error + '40',
+  },
+  errorText: { flex: 1, fontSize: 13, color: colors.error },
   continueBtn: {
     backgroundColor: colors.textPrimary,
     borderRadius: 14,

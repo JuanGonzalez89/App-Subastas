@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { SubastasStack } from './SubastasStack';
 import { PerfilStack } from './PerfilStack';
-import { AdminStack } from './AdminStack';
+import { GuestPerfilScreen } from '../screens/guest/GuestPerfilScreen';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
 
@@ -14,11 +14,10 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   Inicio: 'home',
   Subastas: 'hammer',
   Perfil: 'person-circle-outline',
-  Admin: 'shield-checkmark-outline',
 };
 
 export const MainTabs = () => {
-  const { isAdmin } = useAuth();
+  const { isGuest } = useAuth();
 
   return (
     <Tab.Navigator
@@ -40,8 +39,10 @@ export const MainTabs = () => {
     >
       <Tab.Screen name="Inicio" component={HomeScreen} />
       <Tab.Screen name="Subastas" component={SubastasStack} />
-      <Tab.Screen name="Perfil" component={PerfilStack} />
-      {isAdmin && <Tab.Screen name="Admin" component={AdminStack} />}
+      <Tab.Screen
+        name="Perfil"
+        component={isGuest ? GuestPerfilScreen : PerfilStack}
+      />
     </Tab.Navigator>
   );
 };

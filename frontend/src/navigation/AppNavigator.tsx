@@ -7,7 +7,7 @@ import { MainTabs } from './MainTabs';
 import { colors } from '../theme/colors';
 
 export const AppNavigator = () => {
-  const { user, loading } = useAuth();
+  const { user, isGuest, loading } = useAuth();
 
   if (loading) {
     return (
@@ -19,7 +19,7 @@ export const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      {user ? <MainTabs /> : <AuthStack />}
+      {user || isGuest ? <MainTabs /> : <AuthStack />}
     </NavigationContainer>
   );
 };

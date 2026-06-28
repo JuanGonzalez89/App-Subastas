@@ -8,8 +8,10 @@ import com.grupo4.subastas.model.entity.Asistente;
 import com.grupo4.subastas.model.entity.Catalogo;
 import com.grupo4.subastas.model.entity.ItemCatalogo;
 import com.grupo4.subastas.model.entity.Pujo;
+import com.grupo4.subastas.model.entity.PujoExt;
 import com.grupo4.subastas.model.entity.Subasta;
 import com.grupo4.subastas.repository.*;
+import com.grupo4.subastas.repository.PujoExtRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,8 +31,10 @@ public class PujaService {
     private final SubastaRepository      subastaRepository;
     private final ItemCatalogoRepository itemCatalogoRepository;
     private final PujoRepository         pujoRepository;
+    private final PujoExtRepository      pujoExtRepository;
     private final MedioPagoRepository    medioPagoRepository;
     private final CatalogoRepository     catalogoRepository;
+    private final MultaRepository        multaRepository;
 
     // Categorías que están exentas de los límites de puja
     private static final Set<String> CATEGORIAS_SIN_LIMITE = Set.of("oro", "platino");
@@ -111,6 +115,15 @@ public class PujaService {
                     HttpStatus.FORBIDDEN);
         }
 
+        // Si tiene una multa pendiente y todavía dentro de las 72 hs, no puede
+        // participar hasta cancelarla (documento). Las multas vencidas no bloquean.
+        if (multaRepository.existsByClienteIdAndEstadoAndFechaLimiteAfter(
+                cliente.getIdentificador(), "pendiente", java.time.LocalDateTime.now())) {
+            throw new CustomException(
+                    "Tenés una multa pendiente. Debés cancelarla antes de poder participar de otra subasta.",
+                    HttpStatus.FORBIDDEN);
+        }
+
         // Obtener el ítem
         ItemCatalogo item = itemCatalogoRepository.findById(request.getItemId())
                 .orElseThrow(() -> new CustomException("Ítem no encontrado", HttpStatus.NOT_FOUND));
@@ -124,6 +137,17 @@ public class PujaService {
                 .orElseThrow(() -> new CustomException("La subasta no tiene un catálogo", HttpStatus.NOT_FOUND));
         if (!item.getCatalogo().getIdentificador().equals(catalogo.getIdentificador())) {
             throw new CustomException("El ítem no pertenece a esta subasta", HttpStatus.BAD_REQUEST);
+        }
+
+        // Validar que el usuario no es dueño del ítem
+        if (item.getProducto().getDuenio().equals(cliente.getIdentificador())) {
+            throw new CustomException("No podés pujar en un ítem de tu propiedad", HttpStatus.FORBIDDEN);
+        }
+
+        // Validar que la última puja no es del mismo usuario
+        List<Pujo> ultimasPujas = pujoRepository.findTopByItemIdOrderByImporteDesc(request.getItemId());
+        if (!ultimasPujas.isEmpty() && ultimasPujas.get(0).getAsistenteId().equals(asistente.getIdentificador())) {
+            throw new CustomException("Ya tenés la oferta más alta. Esperá que otro postor puje antes de volver a ofertar", HttpStatus.BAD_REQUEST);
         }
 
         // Obtener la categoría de la subasta para aplicar (o no) los límites
@@ -174,6 +198,9 @@ public class PujaService {
                 .build();
 
         pujo = pujoRepository.save(pujo);
+
+        PujoExt pujoExt = PujoExt.builder().pujo(pujo).build();
+        pujoExtRepository.save(pujoExt);
 
         return PujaResponse.builder()
                 .id(pujo.getIdentificador())

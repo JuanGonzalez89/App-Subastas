@@ -4,12 +4,12 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "clientes")
+@Table(name = "usuarios")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Cliente {
+public class Usuario {
 
     @Id
     @Column(name = "identificador")
@@ -20,15 +20,15 @@ public class Cliente {
     @JoinColumn(name = "identificador")
     private Persona persona;
 
-    @Column(name = "numeropais")
-    private Integer numeroPais;
+    @Column(name = "apellido", length = 150)
+    private String apellido;
 
-    @Column(name = "admitido", length = 2)
-    private String admitido;
+    @Column(name = "email", length = 250, unique = true)
+    private String email;
 
-    @Column(name = "categoria", length = 10)
-    private String categoria;
+    @Column(name = "clavepersonal", length = 255)
+    private String clavePersonal;
 
-    @Column(name = "verificador", nullable = false)
-    private Integer verificador;
+    @Column(name = "rol", length = 10)
+    private String rol;
 }

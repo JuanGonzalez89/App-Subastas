@@ -10,10 +10,13 @@ import com.grupo4.subastas.model.entity.Cliente;
 import com.grupo4.subastas.model.entity.Persona;
 import com.grupo4.subastas.model.entity.PreRegistracion;
 import com.grupo4.subastas.model.entity.TokenConfirmacion;
+import com.grupo4.subastas.model.entity.Usuario;
 import com.grupo4.subastas.repository.ClienteRepository;
+import com.grupo4.subastas.repository.PaisRepository;
 import com.grupo4.subastas.repository.PersonaRepository;
 import com.grupo4.subastas.repository.PreRegistracionRepository;
 import com.grupo4.subastas.repository.TokenConfirmacionRepository;
+import com.grupo4.subastas.repository.UsuarioRepository;
 import com.grupo4.subastas.util.JwtUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -29,24 +32,28 @@ import java.util.UUID;
 public class AuthService {
 
     private final PersonaRepository personaRepository;
+    private final UsuarioRepository usuarioRepository;
     private final ClienteRepository clienteRepository;
     private final PreRegistracionRepository preRegistracionRepository;
     private final TokenConfirmacionRepository tokenConfirmacionRepository;
+    private final PaisRepository paisRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
 
-    // ID del empleado SISTEMA creado en el seed (primera persona insertada = ID 1)
     private static final Integer SISTEMA_EMPLEADO_ID = 1;
 
+    @Transactional
     public void registroPaso1(RegistroStep1Request request) {
         if (preRegistracionRepository.existsByEmail(request.getEmail())) {
             throw new CustomException("Ya existe una solicitud con ese email", HttpStatus.CONFLICT);
         }
-        if (personaRepository.existsByEmail(request.getEmail())) {
+        if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new CustomException("El email ya está registrado", HttpStatus.CONFLICT);
         }
 
+        // Se guarda la solicitud y se aprueba automáticamente: el usuario recibe
+        // el token por mail para completar el registro y generar su clave personal.
         PreRegistracion preRegistracion = PreRegistracion.builder()
                 .nombre(request.getNombre())
                 .apellido(request.getApellido())
@@ -58,33 +65,62 @@ public class AuthService {
                 .numeroPais(request.getNumeroPais())
                 .estado("pendiente")
                 .build();
+        preRegistracion = preRegistracionRepository.save(preRegistracion);
 
-        preRegistracionRepository.save(preRegistracion);
+        aprobar(preRegistracion, "comun");
     }
 
+    /**
+     * Aprueba una pre-registración por su id. La empresa, tras verificar los datos
+     * mediante su investigación externa, aprueba al postor, le asigna una categoría
+     * y le envía el mail para que complete el registro y genere su clave personal.
+     */
     @Transactional
-    public void aprobarRegistro(Integer preRegistracionId, String categoria, String rol) {
+    public void aprobarRegistro(Integer preRegistracionId, String categoria) {
         PreRegistracion pre = preRegistracionRepository.findById(preRegistracionId)
                 .orElseThrow(() -> new CustomException("Pre-registro no encontrado", HttpStatus.NOT_FOUND));
+        aprobar(pre, categoria);
+    }
 
-        if (!pre.getEstado().equals("pendiente")) {
+    /** Variante por email (más cómoda para la demo): aprueba la pre-registración pendiente de ese email. */
+    @Transactional
+    public void aprobarRegistroPorEmail(String email, String categoria) {
+        PreRegistracion pre = preRegistracionRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException("No hay una pre-registración para " + email, HttpStatus.NOT_FOUND));
+        aprobar(pre, categoria);
+    }
+
+    private void aprobar(PreRegistracion pre, String categoria) {
+        if (!"pendiente".equals(pre.getEstado())) {
             throw new CustomException("Esta solicitud ya fue procesada", HttpStatus.BAD_REQUEST);
         }
 
         Persona persona = Persona.builder()
                 .nombre(pre.getNombre())
-                .apellido(pre.getApellido())
-                .email(pre.getEmail())
                 .documento(pre.getNumeroDocumento())
                 .direccion(pre.getDomicilio())
                 .estado("activo")
-                .rol(rol != null ? rol : "USER")
                 .build();
         persona = personaRepository.save(persona);
 
+        Usuario usuario = Usuario.builder()
+                .persona(persona)
+                .apellido(pre.getApellido())
+                .email(pre.getEmail())
+                .rol("USER")
+                .build();
+        usuarioRepository.save(usuario);
+
+        // El país es opcional: si el valor no existe en la tabla paises, se deja en
+        // null para no violar la clave foránea.
+        Integer numeroPais = pre.getNumeroPais();
+        if (numeroPais != null && !paisRepository.existsByNumero(numeroPais)) {
+            numeroPais = null;
+        }
+
         Cliente cliente = new Cliente();
         cliente.setPersona(persona);
-        cliente.setNumeroPais(pre.getNumeroPais());
+        cliente.setNumeroPais(numeroPais);
         cliente.setAdmitido("si");
         cliente.setCategoria(categoria);
         cliente.setVerificador(SISTEMA_EMPLEADO_ID);
@@ -117,39 +153,43 @@ public class AuthService {
             throw new CustomException("El token ha expirado", HttpStatus.BAD_REQUEST);
         }
 
-        Cliente cliente = clienteRepository.findById(tokenConf.getClienteId())
+        Usuario usuario = usuarioRepository.findById(tokenConf.getClienteId())
                 .orElseThrow(() -> new CustomException("Usuario no encontrado", HttpStatus.NOT_FOUND));
 
-        cliente.setClavePersonal(passwordEncoder.encode(request.getClavePersonal()));
-        clienteRepository.save(cliente);
+        usuario.setClavePersonal(passwordEncoder.encode(request.getClavePersonal()));
+        usuarioRepository.save(usuario);
 
         tokenConf.setUsado("si");
         tokenConfirmacionRepository.save(tokenConf);
     }
 
     public AuthResponse login(LoginRequest request) {
-        Cliente cliente = clienteRepository.findByPersonaEmail(request.getEmail())
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException("Email o clave incorrectos", HttpStatus.UNAUTHORIZED));
 
-        if (cliente.getClavePersonal() == null) {
+        if (usuario.getClavePersonal() == null) {
             throw new CustomException("Debés completar el registro primero", HttpStatus.UNAUTHORIZED);
         }
-        if (!passwordEncoder.matches(request.getClavePersonal(), cliente.getClavePersonal())) {
+        if (!passwordEncoder.matches(request.getClavePersonal(), usuario.getClavePersonal())) {
             throw new CustomException("Email o clave incorrectos", HttpStatus.UNAUTHORIZED);
         }
+
+        Cliente cliente = clienteRepository.findById(usuario.getIdentificador())
+                .orElseThrow(() -> new CustomException("Cliente no encontrado", HttpStatus.NOT_FOUND));
+
         if (!"si".equals(cliente.getAdmitido())) {
             throw new CustomException("Tu registro aún no ha sido aprobado por un administrador", HttpStatus.FORBIDDEN);
         }
 
         Persona persona = cliente.getPersona();
-        String rol = persona.getRol() != null ? persona.getRol() : "USER";
-        String token = jwtUtil.generateToken(persona.getEmail(), persona.getIdentificador(), rol);
+        String rol = usuario.getRol() != null ? usuario.getRol() : "USER";
+        String token = jwtUtil.generateToken(usuario.getEmail(), persona.getIdentificador(), rol);
 
         UsuarioResponse usuarioResponse = UsuarioResponse.builder()
                 .id(persona.getIdentificador())
                 .nombre(persona.getNombre())
-                .apellido(persona.getApellido())
-                .email(persona.getEmail())
+                .apellido(usuario.getApellido())
+                .email(usuario.getEmail())
                 .categoria(cliente.getCategoria())
                 .admitido(cliente.getAdmitido())
                 .rol(rol)

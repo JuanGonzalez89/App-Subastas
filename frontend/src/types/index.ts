@@ -142,6 +142,38 @@ export interface PreRegistracionResponse {
   fechaSolicitud: string;
 }
 
+export interface CompraResponse {
+  registroId: number;
+  productoId: number;
+  descripcion: string;
+  fotoIds?: number[];
+  importe: number;
+  comision: number;
+  costoEnvio: number;
+  total: number;
+  moneda: string;
+  estadoPago: string; // pendiente | pagado | multa
+  fechaPago?: string;
+}
+
+export interface PagoResultResponse {
+  pagado: boolean;
+  mensaje: string;
+  multaGenerada: boolean;
+  multaImporte?: number;
+  fechaLimite?: string;
+  compra: CompraResponse;
+}
+
+export interface MultaResponse {
+  id: number;
+  importe: number;
+  motivo?: string;
+  estado: string; // pendiente | pagada
+  fechaLimite?: string;
+  fechaCreacion?: string;
+}
+
 export interface SolicitudItemResponse {
   id: number;
   descripcion: string;
@@ -150,4 +182,17 @@ export interface SolicitudItemResponse {
   estado: string;
   fechaSolicitud: string;
   fotoIds?: number[];
+  // Etapa 2
+  direccionEnvio?: string;
+  // Etapa 3
+  motivoRechazo?: string;
+  // Etapa 4
+  valorBase?: number;
+  comision?: number;
+  fechaSubasta?: string;
+  horaSubasta?: string;
+  lugarSubasta?: string;
+  // Etapa 6
+  depositoUbicacion?: string;
+  polizaSeguro?: string;
 }

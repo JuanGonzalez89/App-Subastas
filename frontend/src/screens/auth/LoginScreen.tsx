@@ -25,7 +25,7 @@ const INPUT_BG = '#1E2D3D';
 const BORDER = '#2E3F50';
 
 export const LoginScreen = ({ navigation }: Props) => {
-  const { login } = useAuth();
+  const { login, enterAsGuest } = useAuth();
   const [email, setEmail] = useState('');
   const [clave, setClave] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -137,6 +137,20 @@ export const LoginScreen = ({ navigation }: Props) => {
               >
                 <Text style={styles.tokenLinkText}>Ya tengo token de confirmación</Text>
               </TouchableOpacity>
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>o</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.guestBtn}
+                onPress={enterAsGuest}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.guestBtnText}>Ingresar como invitado</Text>
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -208,4 +222,19 @@ const styles = StyleSheet.create({
 
   tokenLink: { alignItems: 'center', marginTop: 14 },
   tokenLinkText: { fontSize: 12, color: 'rgba(255,255,255,0.35)', textDecorationLine: 'underline' },
+
+  divider: { flexDirection: 'row', alignItems: 'center', marginTop: 24, gap: 10 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' },
+  dividerText: { fontSize: 13, color: 'rgba(255,255,255,0.35)' },
+
+  guestBtn: {
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(201,168,76,0.4)',
+    backgroundColor: 'transparent',
+  },
+  guestBtnText: { fontSize: 15, fontWeight: '600', color: 'rgba(201,168,76,0.85)' },
 });

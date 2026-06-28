@@ -83,10 +83,11 @@ public class SubastaService {
     private SubastaResponse toResponse(Subasta s, String catUsuario) {
         String nombreSubastador = null;
         if (s.getSubastador() != null && s.getSubastador().getPersona() != null) {
-            Persona p = s.getSubastador().getPersona();
-            nombreSubastador = p.getNombre() +
-                    (p.getApellido() != null ? " " + p.getApellido() : "");
+            nombreSubastador = s.getSubastador().getPersona().getNombre();
         }
+
+        String moneda = (s.getExt() != null && s.getExt().getMoneda() != null)
+                ? s.getExt().getMoneda() : "ARS";
 
         return SubastaResponse.builder()
                 .id(s.getIdentificador())
@@ -95,7 +96,7 @@ public class SubastaService {
                 .estado(s.getEstado())
                 .ubicacion(s.getUbicacion())
                 .categoria(s.getCategoria())
-                .moneda(s.getMoneda() != null ? s.getMoneda() : "ARS")
+                .moneda(moneda)
                 .subastador(nombreSubastador)
                 .puedeAcceder(puedeAcceder(s.getCategoria(), catUsuario))
                 .build();

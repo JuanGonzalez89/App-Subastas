@@ -38,13 +38,19 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    // Endpoint para que el admin apruebe una pre-registración
-    @PostMapping("/admin/aprobar/{preRegistracionId}")
+    @PostMapping("/registro/aprobar/{preRegistracionId}")
     public ResponseEntity<Map<String, String>> aprobarRegistro(
             @PathVariable Integer preRegistracionId,
-            @RequestParam String categoria,
-            @RequestParam(defaultValue = "USER") String rol) {
-        authService.aprobarRegistro(preRegistracionId, categoria, rol);
+            @RequestParam(defaultValue = "comun") String categoria) {
+        authService.aprobarRegistro(preRegistracionId, categoria);
         return ResponseEntity.ok(Map.of("mensaje", "Usuario aprobado. Se envió el email de confirmación."));
+    }
+
+    @PostMapping("/registro/aprobar-por-email")
+    public ResponseEntity<Map<String, String>> aprobarRegistroPorEmail(
+            @RequestParam String email,
+            @RequestParam(defaultValue = "comun") String categoria) {
+        authService.aprobarRegistroPorEmail(email, categoria);
+        return ResponseEntity.ok(Map.of("mensaje", "Usuario aprobado. Se envió el email de confirmación a " + email + "."));
     }
 }

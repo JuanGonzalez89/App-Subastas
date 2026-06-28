@@ -1,8 +1,11 @@
 import api from './axiosInstance';
 import {
+  CompraResponse,
   HistorialResponse,
   MedioPagoRequest,
   MedioPagoResponse,
+  MultaResponse,
+  PagoResultResponse,
   PerfilResponse,
   SolicitudItemResponse,
 } from '../types';
@@ -54,3 +57,23 @@ export const solicitarItemApi = async (descripcion: string, descripcionCompleta:
 
 export const listarMisSolicitudesApi = (): Promise<SolicitudItemResponse[]> =>
   api.get('/clientes/me/solicitudes-items').then((r) => r.data);
+
+export const aceptarCondicionesApi = (id: number): Promise<SolicitudItemResponse> =>
+  api.post(`/clientes/me/solicitudes-items/${id}/aceptar`).then((r) => r.data);
+
+export const rechazarCondicionesApi = (id: number): Promise<SolicitudItemResponse> =>
+  api.post(`/clientes/me/solicitudes-items/${id}/rechazar-condiciones`).then((r) => r.data);
+
+// ── Mis compras (bienes ganados) ─────────────────────────────────────────────
+export const listarComprasApi = (): Promise<CompraResponse[]> =>
+  api.get('/clientes/me/compras').then((r) => r.data);
+
+export const pagarCompraApi = (registroId: number, medioPagoId: number): Promise<PagoResultResponse> =>
+  api.post(`/clientes/me/compras/${registroId}/pagar`, { medioPagoId }).then((r) => r.data);
+
+// ── Multas ───────────────────────────────────────────────────────────────────
+export const listarMultasApi = (): Promise<MultaResponse[]> =>
+  api.get('/clientes/me/multas').then((r) => r.data);
+
+export const pagarMultaApi = (id: number): Promise<MultaResponse> =>
+  api.post(`/clientes/me/multas/${id}/pagar`).then((r) => r.data);

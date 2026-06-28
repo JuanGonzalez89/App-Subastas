@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "pujos")
@@ -31,12 +30,8 @@ public class Pujo {
     @Column(length = 2)
     private String ganador;
 
-    @Column(name = "fechahora")
-    private LocalDateTime fechahora;
-
     @PrePersist
     public void prePersist() {
         if (ganador == null) ganador = "no";
-        if (fechahora == null) fechahora = LocalDateTime.now();
     }
 }

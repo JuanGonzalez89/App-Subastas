@@ -5,6 +5,7 @@ import com.grupo4.subastas.dto.response.*;
 import com.grupo4.subastas.exception.CustomException;
 import com.grupo4.subastas.model.entity.*;
 import com.grupo4.subastas.repository.*;
+import com.grupo4.subastas.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,22 +23,26 @@ import java.util.stream.Collectors;
 public class ClienteService {
 
     private final ClienteRepository      clienteRepository;
+    private final UsuarioRepository      usuarioRepository;
     private final MedioPagoRepository    medioPagoRepository;
     private final AsistenteRepository    asistenteRepository;
     private final PujoRepository         pujoRepository;
     private final SolicitudItemRepository solicitudItemRepository;
     private final SolicitudFotoRepository solicitudFotoRepository;
+    private final SolicitudItemService   solicitudItemService;
 
     // ── Perfil ───────────────────────────────────────────────────────────────
 
     @Transactional
     public PerfilResponse obtenerPerfil(String email) {
         Cliente cliente = findByEmail(email);
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException("Usuario no encontrado", HttpStatus.NOT_FOUND));
         return PerfilResponse.builder()
                 .id(cliente.getIdentificador())
                 .nombre(cliente.getPersona().getNombre())
-                .apellido(cliente.getPersona().getApellido())
-                .email(cliente.getPersona().getEmail())
+                .apellido(usuario.getApellido())
+                .email(usuario.getEmail())
                 .documento(cliente.getPersona().getDocumento())
                 .direccion(cliente.getPersona().getDireccion())
                 .numeroPais(cliente.getNumeroPais())
@@ -60,6 +65,9 @@ public class ClienteService {
     @Transactional
     public MedioPagoResponse agregarMedioPago(String email, MedioPagoRequest request) {
         Cliente cliente = findByEmail(email);
+        // El medio de pago se registra sin verificar. La empresa lo verifica ANTES
+        // del inicio de la subasta (manual). Sin un medio verificado solo se puede
+        // mirar la subasta, no pujar.
         MedioPago medio = MedioPago.builder()
                 .clienteId(cliente.getIdentificador())
                 .tipo(request.getTipo())
@@ -146,6 +154,9 @@ public class ClienteService {
     public SolicitudItemResponse solicitarItem(String email, String descripcion, String descripcionCompleta, BigDecimal precioSugerido, MultipartFile[] fotos) {
         Cliente cliente = findByEmail(email);
 
+        // La solicitud queda en estado 'pendiente'. La empresa revisa los datos y
+        // las fotos, manifiesta interés, inspecciona y propone condiciones (flujo
+        // manual). El estado por defecto lo asigna la entidad (@PrePersist).
         SolicitudItem solicitud = SolicitudItem.builder()
                 .clienteId(cliente.getIdentificador())
                 .descripcion(descripcion)
@@ -170,7 +181,7 @@ public class ClienteService {
             }
         }
 
-        return toSolicitudResponse(solicitud);
+        return solicitudItemService.toResponse(solicitud);
     }
 
     @Transactional
@@ -179,7 +190,7 @@ public class ClienteService {
         return solicitudItemRepository
                 .findByClienteIdOrderByFechaSolicitudDesc(cliente.getIdentificador())
                 .stream()
-                .map(this::toSolicitudResponse)
+                .map(solicitudItemService::toResponse)
                 .toList();
     }
 
@@ -201,16 +212,4 @@ public class ClienteService {
                 .build();
     }
 
-    private SolicitudItemResponse toSolicitudResponse(SolicitudItem s) {
-        List<Integer> fotoIds = solicitudFotoRepository.findIdsBySolicitudItemId(s.getIdentificador());
-        return SolicitudItemResponse.builder()
-                .id(s.getIdentificador())
-                .descripcion(s.getDescripcion())
-                .descripcionCompleta(s.getDescripcionCompleta())
-                .precioSugerido(s.getPrecioSugerido())
-                .estado(s.getEstado())
-                .fechaSolicitud(s.getFechaSolicitud())
-                .fotoIds(fotoIds)
-                .build();
-    }
 }

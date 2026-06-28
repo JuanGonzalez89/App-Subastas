@@ -1,8 +1,11 @@
 package com.grupo4.subastas.controller;
 
 import com.grupo4.subastas.dto.request.MedioPagoRequest;
+import com.grupo4.subastas.dto.request.PagarCompraRequest;
 import com.grupo4.subastas.dto.response.*;
 import com.grupo4.subastas.service.ClienteService;
+import com.grupo4.subastas.service.CompraService;
+import com.grupo4.subastas.service.SolicitudItemService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
@@ -23,6 +26,8 @@ import java.util.List;
 public class ClienteController {
 
     private final ClienteService clienteService;
+    private final SolicitudItemService solicitudItemService;
+    private final CompraService compraService;
 
     // ── Perfil ───────────────────────────────────────────────────────────────
 
@@ -77,5 +82,45 @@ public class ClienteController {
     @GetMapping("/me/solicitudes-items")
     public ResponseEntity<List<SolicitudItemResponse>> listarMisSolicitudes(Authentication auth) {
         return ResponseEntity.ok(clienteService.listarMisSolicitudes(auth.getName()));
+    }
+
+    @PostMapping("/me/solicitudes-items/{id}/aceptar")
+    public ResponseEntity<SolicitudItemResponse> aceptarCondiciones(
+            Authentication auth, @PathVariable Integer id) {
+        return ResponseEntity.ok(solicitudItemService.aceptarCondiciones(id, auth.getName()));
+    }
+
+    @PostMapping("/me/solicitudes-items/{id}/rechazar-condiciones")
+    public ResponseEntity<SolicitudItemResponse> rechazarCondiciones(
+            Authentication auth, @PathVariable Integer id) {
+        return ResponseEntity.ok(solicitudItemService.rechazarCondiciones(id, auth.getName()));
+    }
+
+    // ── Mis compras (bienes ganados) ──────────────────────────────────────────
+
+    @GetMapping("/me/compras")
+    public ResponseEntity<List<CompraResponse>> listarCompras(Authentication auth) {
+        return ResponseEntity.ok(compraService.listarCompras(auth.getName()));
+    }
+
+    @PostMapping("/me/compras/{registroId}/pagar")
+    public ResponseEntity<PagoResultResponse> pagarCompra(
+            Authentication auth,
+            @PathVariable Integer registroId,
+            @Valid @RequestBody PagarCompraRequest request) {
+        return ResponseEntity.ok(compraService.pagar(auth.getName(), registroId, request));
+    }
+
+    // ── Multas ────────────────────────────────────────────────────────────────
+
+    @GetMapping("/me/multas")
+    public ResponseEntity<List<MultaResponse>> listarMultas(Authentication auth) {
+        return ResponseEntity.ok(compraService.listarMultas(auth.getName()));
+    }
+
+    @PostMapping("/me/multas/{id}/pagar")
+    public ResponseEntity<MultaResponse> pagarMulta(
+            Authentication auth, @PathVariable Integer id) {
+        return ResponseEntity.ok(compraService.pagarMulta(auth.getName(), id));
     }
 }

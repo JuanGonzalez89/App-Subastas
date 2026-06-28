@@ -22,20 +22,11 @@ public class Persona {
     @Column(name = "nombre", nullable = false, length = 150)
     private String nombre;
 
-    @Column(name = "apellido", length = 150)
-    private String apellido;
-
-    @Column(name = "email", length = 250, unique = true)
-    private String email;
-
     @Column(name = "direccion", length = 250)
     private String direccion;
 
     @Column(name = "estado", length = 15)
     private String estado;
-
-    @Column(name = "rol", length = 10)
-    private String rol;
 
     @Column(name = "foto")
     private byte[] foto;
