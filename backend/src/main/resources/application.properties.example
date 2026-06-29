@@ -1,13 +1,14 @@
 # ============================================================
-# CONFIGURACIÓN — Sistema de Subastas
+# CONFIGURACION — Sistema de Subastas
 # Copiar este archivo como "application.properties" y completar
 # ============================================================
 
 # ============================================================
 # PostgreSQL LOCAL
-# 1. Instalar PostgreSQL (winget install PostgreSQL.PostgreSQL.17 --source winget)
+# 1. Instalar PostgreSQL
 # 2. Crear base de datos: CREATE DATABASE subastas;
-# 3. Ejecutar: database/init_completo.sql
+# 3. Ejecutar migraciones: database/migration_sprint6.sql y migration_sprint7.sql
+# 4. Cargar: database/scripts_examen.sql
 # ============================================================
 spring.datasource.url=jdbc:postgresql://localhost:5432/subastas
 spring.datasource.username=postgres
@@ -27,15 +28,14 @@ spring.jpa.show-sql=false
 spring.jpa.properties.hibernate.format_sql=true
 
 # ============================================================
-# JWT - Usar variable de entorno en produccion
+# JWT — Usar variable de entorno en produccion
 # ============================================================
 jwt.secret=${JWT_SECRET:CAMBIAR_POR_SECRETO_LARGO_Y_ALEATORIO_MINIMO_32_CARACTERES}
 jwt.expiration=86400000
 
 # ============================================================
-# EMAIL - Gmail SMTP (opcional para desarrollo)
-# Si no se configura, el token de confirmacion aparece en el log del servidor
-# Para configurar: Google Account → Security → App Passwords
+# EMAIL — Gmail SMTP (opcional para desarrollo)
+# Si no se configura, el token de confirmacion aparece en el log
 # ============================================================
 spring.mail.host=${MAIL_HOST:smtp.gmail.com}
 spring.mail.port=${MAIL_PORT:587}
@@ -45,5 +45,14 @@ spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 spring.mail.properties.mail.smtp.ssl.trust=${MAIL_SSL_TRUST:smtp.gmail.com}
 
-app.url=http://localhost:8080
+# ============================================================
+# Multipart — Subida de archivos
+# ============================================================
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=50MB
+
+# ============================================================
+# Servidor
+# ============================================================
+app.url=http://localhost:8080/
 server.port=8080
